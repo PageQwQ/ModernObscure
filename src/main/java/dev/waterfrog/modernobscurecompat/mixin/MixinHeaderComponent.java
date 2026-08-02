@@ -34,19 +34,20 @@ public abstract class MixinHeaderComponent {
         return modernUIAvailable;
     }
 
-    @Inject(method = "method_32666", at = @At("RETURN"), remap = false)
-    private void afterRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
+    @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
+    private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
-        // Draw item_slot AFTER the original renderImage method completes.
-        // The original method renders:
-        //   1. ColorRectSlot (semi-transparent white fill)
-        //   2. Effects (icon effects)
-        //   3. Icon (item icon, may set shader color)
-        // By rendering at RETURN, our slot is on top of the ColorRectSlot
-        // (preventing its white fill from washing out our texture), and
-        // we reset shader color to white to undo any tint from icon rendering.
+        // Reset shader color to white before drawing the slot texture.
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderDebug.step("SLOT", "drawing item_slot at (" + x + "," + y + ")");
         graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
+    }
+
+    @Inject(method = "method_32666", at = @At("RETURN"), remap = false)
+    private void afterRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
+        if (!isModernUIAvailable()) return;
+        // Reset shader color to white after icon rendering.
+        // AccentIcon.renderItem may set shader color from item tint.
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }
