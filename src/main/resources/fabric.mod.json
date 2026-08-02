@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "modernobscurecompat",
+  "version": "${version}",
+  "name": "ModernObscureCompat",
+  "description": "Compatibility layer: renders ModernUI rounded tooltip backgrounds with obscure-tooltips features.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {},
+  "mixins": [
+    "modernobscurecompat.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.1",
+    "java": ">=21"
+  },
+  "recommends": {
+    "modernui": "*",
+    "obscure_tooltips": "*"
+  }
+}

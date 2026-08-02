@@ -1,0 +1,34 @@
+plugins {
+    id 'fabric-loom' version '1.7.4'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
+    modCompileOnly files("libs/obscure_tooltips-fabric-${project.obscure_tooltips_version}.jar")
+    modCompileOnly files("libs/fragmentum-fabric-${project.fragmentum_version}.jar")
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
