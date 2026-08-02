@@ -7,7 +7,7 @@
 
 A Fabric mod hat bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
 
-The mod required [ModernUI](https://modrinth.com/mod/modern-ui) & [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips).
+The mod required [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips), and recommended [ModernUI](https://modrinth.com/mod/modern-ui).
 
 ![preview](/images/preview.png)
 
