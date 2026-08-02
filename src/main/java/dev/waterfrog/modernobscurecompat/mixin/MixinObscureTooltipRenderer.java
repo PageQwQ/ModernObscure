@@ -19,8 +19,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
 
 @Mixin(value = TooltipRenderer.class, remap = true)
@@ -28,15 +26,6 @@ public abstract class MixinObscureTooltipRenderer {
 
     @Unique
     private static volatile Boolean modernUIAvailable;
-
-    @Unique
-    private static final ThreadLocal<List<ClientTooltipComponent>> savedComponents = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Font> savedFont = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedContentX = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedContentY = new ThreadLocal<>();
 
     @Unique
     private static boolean isModernUIAvailable() {
@@ -65,8 +54,6 @@ public abstract class MixinObscureTooltipRenderer {
             return;
         }
         CompatState.setRendering(true);
-        savedComponents.set(components);
-        savedFont.set(font);
         RenderDebug.step("HEAD", "setRendering=true, proceed");
     }
 
@@ -78,69 +65,8 @@ public abstract class MixinObscureTooltipRenderer {
                                     CallbackInfoReturnable<Boolean> cir) {
         RenderDebug.step("RETURN", "afterRender - final flush");
         graphics.flush();
-
-        // Reset render state after SDF background.
-        // ModernUI's SDF shader can leave depth/shader state corrupted,
-        // which prevents AppleSkin food bars from rendering.
         RenderSystem.disableDepthTest();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
-        // Manually re-render AppleSkin FoodOverlay components.
-        // The SDF background rendering may corrupt the shader/blend/depth state
-        // that AppleSkin's drawItems() relies on, so we re-render here after
-        // a clean state reset.
-        // NOTE: obscure pops the pose at line 71 after component rendering, so
-        // by the time afterRender runs, we're back at z=0. AppleSkin renders
-        // at z=400 in the tooltip space, so we need to push to the correct z.
-        List<ClientTooltipComponent> comps = savedComponents.get();
-        Font fnt = savedFont.get();
-        Integer cx = savedContentX.get();
-        Integer cy = savedContentY.get();
-        if (comps != null && fnt != null && cx != null && cy != null) {
-            graphics.pose().pushPose();
-            graphics.pose().translate(0f, 0f, 400f);
-            // AppleSkin's onRenderTooltip enables depth test internally.
-            // The SDF background wrote depth values at the same z-level,
-            // so food bars would be rejected by the depth test. Set depthFunc
-            // to GL_ALWAYS (519) so depth test always passes.
-            RenderSystem.depthFunc(519); // GL_ALWAYS
-            int y = cy;
-            for (ClientTooltipComponent comp : comps) {
-                if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
-                    try {
-                        // Debug: check INSTANCE field
-                        try {
-                            Class<?> handlerClass = Class.forName("squeek.appleskin.client.TooltipOverlayHandler");
-                            Field instanceField = handlerClass.getDeclaredField("INSTANCE");
-                            instanceField.setAccessible(true);
-                            Object instance = instanceField.get(null);
-                            RenderDebug.step("AFTER", "AppleSkin INSTANCE=" + instance + " comp=" + comp.getClass().getName());
-                        } catch (Exception e2) {
-                            RenderDebug.step("AFTER", "AppleSkin debug failed: " + e2.getMessage());
-                        }
-
-                        // AppleSkin is compiled with Yarn mappings, so at the
-                        // intermediary level the method is named "method_32666",
-                        // not "drawItems" (Yarn source) or "renderImage" (Mojmap).
-                        // Parameters: TextRenderer/Font, int, int, DrawContext/GuiGraphics
-                        Method drawItems = comp.getClass().getMethod("method_32666", Font.class, int.class, int.class, GuiGraphics.class);
-                        drawItems.invoke(comp, fnt, cx, y, graphics);
-                        RenderDebug.step("AFTER", "re-rendered AppleSkin FoodOverlay at (" + cx + "," + y + ")");
-                    } catch (Exception e) {
-                        RenderDebug.step("AFTER", "AppleSkin re-render failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
-                    }
-                }
-                y += comp.getHeight();
-            }
-            graphics.pose().popPose();
-            graphics.flush();
-        }
-        savedComponents.remove();
-        savedFont.remove();
-        savedContentX.remove();
-        savedContentY.remove();
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
@@ -155,26 +81,22 @@ public abstract class MixinObscureTooltipRenderer {
         try {
             RenderDebug.step("PANEL", "buffer SDF bg via ModernUI");
             Matrix4f pose = graphics.pose().last().pose();
-            // Save content position for AppleSkin rendering in afterRender.
-            // obscure default margin is 3, content renders at (pos + margin).
-            savedContentX.set(pos.x() + 3);
-            savedContentY.set(pos.y() + 3);
-
             ModernUIBackgroundRenderer.drawRoundedBackground(
                     graphics, pose, (float) pos.x(), (float) pos.y(), width, height, state);
             RenderDebug.step("PANEL", "SDF bg buffered");
 
             // Flush SDF background and reset render state.
-            // ModernUI's SDF shader may write depth values at the tooltip
-            // z-level, which would cause AppleSkin's food bars (at same z)
-            // to be rejected by the depth test. Set depthFunc to GL_ALWAYS
-            // so depth test always passes regardless of depth buffer content.
+            // ModernUI's SDF shader writes depth values at the tooltip z-level.
+            // AppleSkin's onRenderTooltip calls enableDepthTest(), and the default
+            // depth function GL_LESS would reject food bars at the same z as the bg.
+            // Set depthFunc to GL_ALWAYS (519) so depth test always passes.
             graphics.flush();
             RenderSystem.disableDepthTest();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            RenderDebug.step("PANEL", "render state reset after SDF");
+            RenderSystem.depthFunc(519); // GL_ALWAYS — depth test always passes
+            RenderDebug.step("PANEL", "render state reset after SDF, depthFunc=GL_ALWAYS");
         } catch (Exception e) {
             RenderDebug.step("PANEL", "SDF bg failed, fallback: " + e.getClass().getSimpleName());
             state.renderPanel(graphics, pos, width, height);
