@@ -190,7 +190,7 @@ public abstract class MixinObscureTooltipRenderer {
             RenderDebug.step("PANEL", "drawing item_slot texture");
             int slotX = pos.x() + 4;
             int slotY = pos.y() + 4;
-            graphics.blit(ITEM_SLOT, slotX, slotY, 0, 0, 18, 18, 16, 16);
+            graphics.blit(ITEM_SLOT, slotX, slotY, 0, 0, 18, 18, 18, 18);
             RenderDebug.step("PANEL", "item_slot texture drawn at (" + slotX + "," + slotY + ")");
         } catch (Exception e) {
             RenderDebug.step("PANEL", "SDF bg failed, fallback: " + e.getClass().getSimpleName());
