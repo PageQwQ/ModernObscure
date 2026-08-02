@@ -1,7 +1,5 @@
 <div align="center"><center>
 
-![title_image](/images/titleimage.png)
-
 # ModernObscure
 
 [![License](https://img.shields.io/github/license/PageQwQ/ModernObscure?style=flat)](https://github.com/PageQwQ/ModernObscure)
@@ -9,16 +7,17 @@
 
 A Fabric mod hat bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
 
-![title_image](/images/preview.png)
+The mod required [ModernUI](https://modrinth.com/mod/modern-ui) & [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips).
+
+![preview](/images/preview.png)
 
 </center></div>
 
 ## Features
 
-- **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support
-- **Full obscure-tooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips
-- **Item Slot Texture** — Custom item slot border rendered on top of the SDF background for clear visual separation
-- **Graceful Fallback** — When ModernUI is not installed, tooltips fall back to obscure-tooltips' default rendering
+- **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support.
+- **Obscure-ooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips.
+- **Graceful Fallback** — When ModernUI is not installed, tooltips fall back to obscure-tooltips' default rendering.
 
 ## Building from Source
 
@@ -33,7 +32,7 @@ cd ModernObscure
 JAVA_HOME=/path/to/jdk-21 ./gradlew build
 ```
 
-The built JAR will be in `build/libs/modernobscure-compat-1.0.0.jar`.
+The built JAR will be in `build/libs/*.jar`.
 
 ## Technical Notes
 
