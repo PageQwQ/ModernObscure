@@ -90,22 +90,25 @@ public abstract class MixinObscureTooltipRenderer {
         // The SDF background rendering may corrupt the shader/blend/depth state
         // that AppleSkin's drawItems() relies on, so we re-render here after
         // a clean state reset.
+        // NOTE: obscure pops the pose at line 71 after component rendering, so
+        // by the time afterRender runs, we're back at z=0. AppleSkin renders
+        // at z=400 in the tooltip space, so we need to push to the correct z.
         List<ClientTooltipComponent> comps = savedComponents.get();
         Font fnt = savedFont.get();
         Integer cx = savedContentX.get();
         Integer cy = savedContentY.get();
         if (comps != null && fnt != null && cx != null && cy != null) {
+            graphics.pose().pushPose();
+            graphics.pose().translate(0f, 0f, 400f);
             int y = cy;
             for (ClientTooltipComponent comp : comps) {
                 if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
                     try {
-                        // AppleSkin's FoodOverlay is compiled with Yarn mappings,
-                        // so the method is named "drawItems" not "renderImage" (Mojmap).
-                        // At the intermediary level the types are the same:
-                        // drawItems(TextRenderer, int, int, DrawContext) →
-                        // drawItems(class_327, int, int, class_332) which matches
-                        // Font.class and GuiGraphics.class at runtime.
-                        Method drawItems = comp.getClass().getMethod("drawItems", Font.class, int.class, int.class, GuiGraphics.class);
+                        // AppleSkin is compiled with Yarn mappings, so at the
+                        // intermediary level the method is named "method_32666",
+                        // not "drawItems" (Yarn source) or "renderImage" (Mojmap).
+                        // Parameters: TextRenderer/Font, int, int, DrawContext/GuiGraphics
+                        Method drawItems = comp.getClass().getMethod("method_32666", Font.class, int.class, int.class, GuiGraphics.class);
                         drawItems.invoke(comp, fnt, cx, y, graphics);
                         RenderDebug.step("AFTER", "re-rendered AppleSkin FoodOverlay at (" + cx + "," + y + ")");
                     } catch (Exception e) {
@@ -114,6 +117,7 @@ public abstract class MixinObscureTooltipRenderer {
                 }
                 y += comp.getHeight();
             }
+            graphics.pose().popPose();
             graphics.flush();
         }
         savedComponents.remove();
