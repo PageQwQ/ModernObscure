@@ -6,7 +6,7 @@
   "description": "Compatibility layer: renders ModernUI rounded tooltip backgrounds with obscure-tooltips features.",
   "authors": [],
   "contact": {},
-  "license": "MIT",
+  "license": "Apache-2.0",
   "environment": "client",
   "entrypoints": {},
   "mixins": [
