@@ -38,6 +38,8 @@ public abstract class MixinObscureTooltipRenderer {
     private static final ThreadLocal<Integer> savedPosY = new ThreadLocal<>();
     @Unique
     private static final ThreadLocal<Integer> savedPosX = new ThreadLocal<>();
+    @Unique
+    private static final ThreadLocal<Integer> savedHeight = new ThreadLocal<>();
 
     @Unique
     private static boolean isModernUIAvailable() {
@@ -88,13 +90,15 @@ public abstract class MixinObscureTooltipRenderer {
         Integer margin = savedMargin.get();
         Integer posX = savedPosX.get();
         Integer posY = savedPosY.get();
-        if (comps == null || fnt == null || margin == null || posX == null || posY == null) {
+        Integer height = savedHeight.get();
+        if (comps == null || fnt == null || margin == null || posX == null || posY == null || height == null) {
             RenderDebug.step("AFTER", "missing saved data, skip");
             savedComponents.remove();
             savedFont.remove();
             savedMargin.remove();
             savedPosX.remove();
             savedPosY.remove();
+            savedHeight.remove();
             return;
         }
 
@@ -105,14 +109,16 @@ public abstract class MixinObscureTooltipRenderer {
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthFunc(519); // GL_ALWAYS
 
-        // Find AppleSkin component and calculate its correct Y position
-        // by iterating through all components.
-        int componentY = margin + posY;
-        boolean found = false;
+        // Find AppleSkin component and calculate its Y position at the bottom of content.
+        // In obscure's render():
+        //   height = 2*margin + contentHeight - 2  (contentHeight = sum of all comp heights)
+        //   component rendering starts at: pos.y + margin
+        //   last component Y = pos.y + margin + contentHeight - lastCompHeight
+        //                    = pos.y + height - margin + 2 - lastCompHeight
         for (ClientTooltipComponent comp : comps) {
             if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
-                found = true;
                 int componentX = margin + posX;
+                int componentY = posY + height - margin + 2 - comp.getHeight();
                 RenderDebug.step("AFTER", "rendering AppleSkin at (" + componentX + "," + componentY + ")");
                 try {
                     graphics.pose().pushPose();
@@ -127,10 +133,6 @@ public abstract class MixinObscureTooltipRenderer {
                 }
                 break;
             }
-            componentY += comp.getHeight();
-        }
-        if (!found) {
-            RenderDebug.step("AFTER", "no AppleSkin component found");
         }
 
         savedComponents.remove();
@@ -138,6 +140,7 @@ public abstract class MixinObscureTooltipRenderer {
         savedMargin.remove();
         savedPosX.remove();
         savedPosY.remove();
+        savedHeight.remove();
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
@@ -157,6 +160,7 @@ public abstract class MixinObscureTooltipRenderer {
             // We save pos.x/y and margin separately for position calculation.
             savedPosX.set(pos.x());
             savedPosY.set(pos.y());
+            savedHeight.set(height);
             int margin = 3; // ClientConfig.CONTENT_MARGIN default
             savedMargin.set(margin);
 
