@@ -1,10 +1,12 @@
 package dev.waterfrog.modernobscurecompat.compat;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import dev.obscuria.tooltips.client.TooltipState;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -39,8 +41,8 @@ public final class ModernUIBackgroundRenderer {
 
     private static boolean reflectionInitialized;
 
-    // No cached RenderType — we use immediate mode drawing to bypass
-    // MultiBufferSource's HashMap-based buffer ordering entirely.
+    // Reflection handle for Matrix4fStack.current to save/restore stack depth
+    private static Field modelViewStackCurrentField;
 
     private static void initReflection() {
         if (reflectionInitialized) return;
@@ -71,6 +73,10 @@ public final class ModernUIBackgroundRenderer {
                     float.class, float.class, int.class, int.class,
                     boolean.class, int.class);
             drawRoundedBgMethod.setAccessible(true);
+
+            // For saving/restoring ModelViewStack depth
+            modelViewStackCurrentField = Matrix4fStack.class.getDeclaredField("current");
+            modelViewStackCurrentField.setAccessible(true);
         } catch (Exception ignored) {
         }
     }
@@ -180,12 +186,36 @@ public final class ModernUIBackgroundRenderer {
             }
             RenderDebug.step("BG-SDF", "state ready — calling ModernUI drawRoundedBackground");
 
-            // Delegate to ModernUI's own rendering method.
-            // It handles shader setup, blending, vertex format, and buffering correctly.
-            // Params: GuiGraphics, Matrix4f, x, y, width, height, useGradient, zLevel
-            drawRoundedBgMethod.invoke(tooltipRenderer,
-                    gr, pose, x, y, contentWidth, contentHeight, false, 0);
-            RenderDebug.step("BG-SDF", "ModernUI drawRoundedBackground complete");
+            // Save ModelViewStack depth to restore in case the method throws
+            // and leaves the stack unbalanced (which causes "max stack size of 16" crashes).
+            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+            int originalDepth = 0;
+            if (modelViewStackCurrentField != null) {
+                originalDepth = modelViewStackCurrentField.getInt(modelViewStack);
+            }
+
+            try {
+                // Delegate to ModernUI's own rendering method.
+                // It handles shader setup, blending, vertex format, and buffering correctly.
+                // Params: GuiGraphics, Matrix4f, x, y, width, height, useGradient, zLevel
+                drawRoundedBgMethod.invoke(tooltipRenderer,
+                        gr, pose, x, y, contentWidth, contentHeight, false, 0);
+                RenderDebug.step("BG-SDF", "ModernUI drawRoundedBackground complete");
+            } finally {
+                // Restore ModelViewStack depth. ModernUI's method pushes/pops internally,
+                // and if it throws, the stack is left unbalanced. This ensures balance.
+                if (modelViewStackCurrentField != null) {
+                    int currentDepth = modelViewStackCurrentField.getInt(modelViewStack);
+                    int diff = currentDepth - originalDepth;
+                    if (diff > 0) {
+                        RenderDebug.step("BG-SDF", "restoring " + diff + " unbalanced ModelViewStack entries");
+                        for (int i = 0; i < diff; i++) {
+                            modelViewStack.popMatrix();
+                        }
+                        RenderSystem.applyModelViewMatrix();
+                    }
+                }
+            }
         } catch (Exception e) {
             RenderDebug.step("BG-SDF", "EXCEPTION: " + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
