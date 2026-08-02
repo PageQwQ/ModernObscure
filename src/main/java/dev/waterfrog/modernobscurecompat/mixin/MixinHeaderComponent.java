@@ -33,7 +33,7 @@ public abstract class MixinHeaderComponent {
         return modernUIAvailable;
     }
 
-    @Inject(method = "renderImage", at = @At("HEAD"))
+    @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
         // Draw item_slot texture behind the slot border and item icon.

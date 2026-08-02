@@ -10,7 +10,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
-import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 import org.joml.Vector2ic;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,9 +24,6 @@ import java.util.List;
 
 @Mixin(value = TooltipRenderer.class, remap = true)
 public abstract class MixinObscureTooltipRenderer {
-
-    @Unique
-    private static final ResourceLocation ITEM_SLOT = ResourceLocation.fromNamespaceAndPath("modernobscurecompat", "textures/gui/item_slot.png");
 
     @Unique
     private static volatile Boolean modernUIAvailable;
