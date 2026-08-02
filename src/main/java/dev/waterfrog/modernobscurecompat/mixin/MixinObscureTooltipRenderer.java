@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 @Mixin(value = TooltipRenderer.class, remap = true)
@@ -26,6 +27,17 @@ public abstract class MixinObscureTooltipRenderer {
 
     @Unique
     private static volatile Boolean modernUIAvailable;
+
+    @Unique
+    private static final ThreadLocal<List<ClientTooltipComponent>> savedComponents = new ThreadLocal<>();
+    @Unique
+    private static final ThreadLocal<Font> savedFont = new ThreadLocal<>();
+    @Unique
+    private static final ThreadLocal<Integer> savedMargin = new ThreadLocal<>();
+    @Unique
+    private static final ThreadLocal<Integer> savedPosY = new ThreadLocal<>();
+    @Unique
+    private static final ThreadLocal<Integer> savedPosX = new ThreadLocal<>();
 
     @Unique
     private static boolean isModernUIAvailable() {
@@ -54,6 +66,8 @@ public abstract class MixinObscureTooltipRenderer {
             return;
         }
         CompatState.setRendering(true);
+        savedComponents.set(components);
+        savedFont.set(font);
         RenderDebug.step("HEAD", "setRendering=true, proceed");
     }
 
@@ -63,10 +77,67 @@ public abstract class MixinObscureTooltipRenderer {
                                     int mouseX, int mouseY,
                                     ClientTooltipPositioner positioner,
                                     CallbackInfoReturnable<Boolean> cir) {
-        RenderDebug.step("RETURN", "afterRender - final flush");
+        RenderDebug.step("RETURN", "afterRender - final flush & AppleSkin re-render");
         graphics.flush();
+
+        // Re-render AppleSkin FoodOverlay at the correct position.
+        // The component loop in obscure's render() handles the renderImage call,
+        // but the SDF shader may corrupt GL state. We re-render here with clean state.
+        List<ClientTooltipComponent> comps = savedComponents.get();
+        Font fnt = savedFont.get();
+        Integer margin = savedMargin.get();
+        Integer posX = savedPosX.get();
+        Integer posY = savedPosY.get();
+        if (comps == null || fnt == null || margin == null || posX == null || posY == null) {
+            RenderDebug.step("AFTER", "missing saved data, skip");
+            savedComponents.remove();
+            savedFont.remove();
+            savedMargin.remove();
+            savedPosX.remove();
+            savedPosY.remove();
+            return;
+        }
+
+        // Clean state for AppleSkin
         RenderSystem.disableDepthTest();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.depthFunc(519); // GL_ALWAYS
+
+        // Find AppleSkin component and calculate its correct Y position
+        // by iterating through all components.
+        int componentY = margin + posY;
+        boolean found = false;
+        for (ClientTooltipComponent comp : comps) {
+            if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
+                found = true;
+                int componentX = margin + posX;
+                RenderDebug.step("AFTER", "rendering AppleSkin at (" + componentX + "," + componentY + ")");
+                try {
+                    graphics.pose().pushPose();
+                    graphics.pose().translate(0f, 0f, 400f);
+                    Method drawItems = comp.getClass().getMethod("method_32666", Font.class, int.class, int.class, GuiGraphics.class);
+                    drawItems.invoke(comp, fnt, componentX, componentY, graphics);
+                    graphics.pose().popPose();
+                    graphics.flush();
+                    RenderDebug.step("AFTER", "AppleSkin rendered successfully");
+                } catch (Exception e) {
+                    RenderDebug.step("AFTER", "AppleSkin failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                }
+                break;
+            }
+            componentY += comp.getHeight();
+        }
+        if (!found) {
+            RenderDebug.step("AFTER", "no AppleSkin component found");
+        }
+
+        savedComponents.remove();
+        savedFont.remove();
+        savedMargin.remove();
+        savedPosX.remove();
+        savedPosY.remove();
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
@@ -81,22 +152,26 @@ public abstract class MixinObscureTooltipRenderer {
         try {
             RenderDebug.step("PANEL", "buffer SDF bg via ModernUI");
             Matrix4f pose = graphics.pose().last().pose();
+            // Save position for AppleSkin rendering. The content starts at
+            // (pos.x + margin, pos.y + margin) where margin = ClientConfig.CONTENT_MARGIN.
+            // We save pos.x/y and margin separately for position calculation.
+            savedPosX.set(pos.x());
+            savedPosY.set(pos.y());
+            int margin = 3; // ClientConfig.CONTENT_MARGIN default
+            savedMargin.set(margin);
+
             ModernUIBackgroundRenderer.drawRoundedBackground(
                     graphics, pose, (float) pos.x(), (float) pos.y(), width, height, state);
             RenderDebug.step("PANEL", "SDF bg buffered");
 
             // Flush SDF background and reset render state.
-            // ModernUI's SDF shader writes depth values at the tooltip z-level.
-            // AppleSkin's onRenderTooltip calls enableDepthTest(), and the default
-            // depth function GL_LESS would reject food bars at the same z as the bg.
-            // Set depthFunc to GL_ALWAYS (519) so depth test always passes.
             graphics.flush();
             RenderSystem.disableDepthTest();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
-            RenderSystem.depthFunc(519); // GL_ALWAYS — depth test always passes
-            RenderDebug.step("PANEL", "render state reset after SDF, depthFunc=GL_ALWAYS");
+            RenderSystem.depthFunc(519); // GL_ALWAYS
+            RenderDebug.step("PANEL", "render state reset after SDF");
         } catch (Exception e) {
             RenderDebug.step("PANEL", "SDF bg failed, fallback: " + e.getClass().getSimpleName());
             state.renderPanel(graphics, pos, width, height);
