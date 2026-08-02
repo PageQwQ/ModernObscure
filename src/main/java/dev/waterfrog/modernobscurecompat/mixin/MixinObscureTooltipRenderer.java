@@ -99,10 +99,14 @@ public abstract class MixinObscureTooltipRenderer {
             for (ClientTooltipComponent comp : comps) {
                 if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
                     try {
-                        // Mojmap: renderImage(Font, int, int, GuiGraphics)
-                        // This overrides ClientTooltipComponent.renderImage
-                        Method renderImage = comp.getClass().getMethod("renderImage", Font.class, int.class, int.class, GuiGraphics.class);
-                        renderImage.invoke(comp, fnt, cx, y, graphics);
+                        // AppleSkin's FoodOverlay is compiled with Yarn mappings,
+                        // so the method is named "drawItems" not "renderImage" (Mojmap).
+                        // At the intermediary level the types are the same:
+                        // drawItems(TextRenderer, int, int, DrawContext) →
+                        // drawItems(class_327, int, int, class_332) which matches
+                        // Font.class and GuiGraphics.class at runtime.
+                        Method drawItems = comp.getClass().getMethod("drawItems", Font.class, int.class, int.class, GuiGraphics.class);
+                        drawItems.invoke(comp, fnt, cx, y, graphics);
                         RenderDebug.step("AFTER", "re-rendered AppleSkin FoodOverlay at (" + cx + "," + y + ")");
                     } catch (Exception e) {
                         RenderDebug.step("AFTER", "AppleSkin re-render failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
