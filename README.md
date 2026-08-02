@@ -1,27 +1,24 @@
+<div align="center"><center>
+
+![title_image](/images/titleimage.png)
+
 # ModernObscure
 
-A Fabric mod compatibility layer for Minecraft 1.21.1 that bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
+[![License](https://img.shields.io/github/license/PageQwQ/ModernObscure?style=flat)](https://github.com/PageQwQ/ModernObscure)
+[![Available for Fabric](https://img.shields.io/badge/Available%20for-Fabric-dbd0b4?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAcBAMAAACNPbLgAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9TpX5UHMwgIpihOtlFRRxLFYtgobQVWnUwufQLmjQkKS6OgmvBwY/FqoOLs64OroIg+AHi6uKk6CIl/i8ptIj14Lgf7+497t4BQr3MNKsrAmi6bSZjUSmTXZUCr+iHiADG0Cszy4inFtPoOL7u4ePrXZhndT735xhQcxYDfBJxhBmmTbxBPLtpG5z3iUVWlFXic+JJky5I/Mh1xeM3zgWXBZ4pmunkPLFILBXaWGljVjQ14hnikKrplC9kPFY5b3HWylXWvCd/YTCnr6S4TnMUMSwhjgQkKKiihDJshGnVSbGQpP1oB/+I60+QSyFXCYwcC6hAg+z6wf/gd7dWfnrKSwpGge4Xx/kYBwK7QKPmON/HjtM4AfzPwJXe8lfqwNwn6bWWFjoCBreBi+uWpuwBlzvA8JMhm7Ir+WkK+TzwfkbflAWGboG+Na+35j5OH4A0dbV8AxwcAhMFyl7v8O6e9t7+PdPs7wd+dXKrd9SjeQAAAAlwSFlzAAAuIwAALiMBeKU/dgAAAAd0SU1FB+cLFAcgIbOcUjoAAAAbUExURQAAAB0tQTg0KoB6bZqSfq6mlLyynMa8pdvQtJRJT6UAAAABdFJOUwBA5thmAAAAAWJLR0QB/wIt3gAAAF5JREFUGNN10FENwCAMhOFqOQuzMAtYOAtYqGw6mkEvhL59yR9Ca5YDqyOC465eKYqQm6LoCkVwnwQOBYKdeA5l51zhFtrsnPmg6m3Z2akk15dFH1lWFQVxlUFv+2sAJlA9O7NwQRQAAAAASUVORK5CYII=)](https://fabricmc.net)
+
+A Fabric mod hat bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
+
+![title_image](/images/preview.png)
+
+</center></div>
 
 ## Features
 
 - **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support
 - **Full obscure-tooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips
 - **Item Slot Texture** — Custom item slot border rendered on top of the SDF background for clear visual separation
-- **AppleSkin Integration** — Correctly renders AppleSkin food hunger/saturation bars at the bottom of tooltips
 - **Graceful Fallback** — When ModernUI is not installed, tooltips fall back to obscure-tooltips' default rendering
-
-## Requirements
-
-- **Fabric Loader** >= 0.16.9
-- **Minecraft** 1.21.1
-- **Java** >= 21
-
-### Optional Dependencies
-
-- [ModernUI-MC](https://github.com/CyclopsMC/ModernUI) (>= 3.13) — Enables rounded SDF tooltip backgrounds
-- [obscure-tooltips](https://github.com/Obscuria/obscure-tooltips) (>= 4.2.2) — Required for tooltip features
-- [fragmentum](https://github.com/Obscuria/fragmentum) (>= 2.1.0) — Required by obscure-tooltips
-- [AppleSkin](https://github.com/squeek502/AppleSkin) — Food bar integration in tooltips
 
 ## Building from Source
 
@@ -44,7 +41,3 @@ The built JAR will be in `build/libs/modernobscure-compat-1.0.0.jar`.
 - ThreadLocal guards prevent double-rendering when both mods try to render the same tooltip
 - The SDF background uses `GL_ALWAYS` depth function to prevent AppleSkin bars from being rejected by the depth buffer
 - ModelViewStack depth is tracked and restored to prevent crashes from unbalanced push/pop in ModernUI's internal methods
-
-## License
-
-Apache-2.0
