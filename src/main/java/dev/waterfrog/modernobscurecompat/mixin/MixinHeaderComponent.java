@@ -1,5 +1,6 @@
 package dev.waterfrog.modernobscurecompat.mixin;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.obscuria.tooltips.client.component.HeaderComponent;
 import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import net.minecraft.client.gui.Font;
@@ -36,12 +37,11 @@ public abstract class MixinHeaderComponent {
     @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
-        // Draw item_slot texture behind the slot border and item icon.
-        // obscure's ColorRectSlot draws with very low alpha (~12%) on the
-        // SDF background, making it nearly invisible. Our item_slot.png
-        // provides a clear visible slot border.
-        // The slot renders at (x, y) with size 20x20; item icon is 16x16
-        // centered. Draw slot texture 1px outside the icon for a visible border.
+        // Reset shader color to white before drawing the slot texture.
+        // obscure-tooltips' icon rendering (e.g. AccentIcon.renderItem) may
+        // leave the shader color tinted from the item's color multiplier,
+        // which would cause our item_slot texture to render with a wrong tint.
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         RenderDebug.step("SLOT", "drawing item_slot at (" + x + "," + y + ")");
         graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
     }
