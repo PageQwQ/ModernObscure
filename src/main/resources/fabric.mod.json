@@ -15,7 +15,9 @@
   "depends": {
     "fabricloader": ">=0.16.9",
     "minecraft": "~1.21.1",
-    "java": ">=21",
+    "java": ">=21"
+  },
+  "recommends": {
     "modernui": "*",
     "obscure_tooltips": "*"
   }

@@ -179,19 +179,7 @@ public abstract class MixinObscureTooltipRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.depthFunc(519); // GL_ALWAYS
-
-            // Draw item_slot texture on top of SDF background, below components.
-            // obscure's ColorRectSlot draws with very low alpha (~12%) on the
-            // SDF background, making it nearly invisible. Our item_slot.png
-            // provides a clear visible slot border.
-            // The slot is rendered by HeaderComponent at (pos.x+margin, pos.y+margin)
-            // with size 20x20. The item icon (16x16) is centered at (pos.x+5, pos.y+5).
-            // Draw our slot texture at the same position with 1px padding around the icon.
-            RenderDebug.step("PANEL", "drawing item_slot texture");
-            int slotX = pos.x() + 4;
-            int slotY = pos.y() + 4;
-            graphics.blit(ITEM_SLOT, slotX, slotY, 0, 0, 18, 18, 18, 18);
-            RenderDebug.step("PANEL", "item_slot texture drawn at (" + slotX + "," + slotY + ")");
+            RenderDebug.step("PANEL", "render state reset after SDF");
         } catch (Exception e) {
             RenderDebug.step("PANEL", "SDF bg failed, fallback: " + e.getClass().getSimpleName());
             state.renderPanel(graphics, pos, width, height);
