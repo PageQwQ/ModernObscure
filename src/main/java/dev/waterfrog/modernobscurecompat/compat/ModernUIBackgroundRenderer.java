@@ -1,7 +1,6 @@
 package dev.waterfrog.modernobscurecompat.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import dev.obscuria.tooltips.client.TooltipState;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.ShaderInstance;
@@ -92,19 +91,16 @@ public final class ModernUIBackgroundRenderer {
 
         initReflection();
         if (tooltipRendererClass == null) {
-            RenderDebug.step("BG-SDF", "tooltipRendererClass null, abort");
             return;
         }
 
         try {
-            RenderDebug.step("BG-SDF", "start drawRoundedBackground — dst=(" + x + "," + y + ") content=" + contentWidth + "x" + contentHeight);
             // --- Get UIManager instance and its TooltipRenderer ---
             Object uiManager = uiManagerGetInstanceMethod.invoke(null);
             Field trField = uiManagerClass.getDeclaredField("mTooltipRenderer");
             trField.setAccessible(true);
             Object tooltipRenderer = trField.get(uiManager);
             if (tooltipRenderer == null) {
-                RenderDebug.step("BG-SDF", "tooltipRenderer null, abort");
                 return;
             }
 
@@ -112,7 +108,6 @@ public final class ModernUIBackgroundRenderer {
             Method computeWorkingColor = tooltipRendererClass.getDeclaredMethod("computeWorkingColor", net.minecraft.world.item.ItemStack.class);
             computeWorkingColor.setAccessible(true);
             computeWorkingColor.invoke(tooltipRenderer, state.stack);
-            RenderDebug.step("BG-SDF", "computeWorkingColor done");
 
             // --- Call updateBorderColor if cycling ---
             int borderColorCycle = sBorderColorCycleField.getInt(null);
@@ -127,7 +122,6 @@ public final class ModernUIBackgroundRenderer {
                 Method updateBorderColor = tooltipRendererClass.getDeclaredMethod("updateBorderColor");
                 updateBorderColor.setAccessible(true);
                 updateBorderColor.invoke(tooltipRenderer);
-                RenderDebug.step("BG-SDF", "updateBorderColor done");
             }
 
             // --- Read static config ---
@@ -150,7 +144,6 @@ public final class ModernUIBackgroundRenderer {
 
             ShaderInstance shader = (ShaderInstance) getShaderTooltipMethod.invoke(null);
             if (shader == null) {
-                RenderDebug.step("BG-SDF", "shader null, abort");
                 return;
             }
 
@@ -184,7 +177,6 @@ public final class ModernUIBackgroundRenderer {
                 setBorderColor(shader, "u_PushData4", (int) chooseBorderColor.invoke(tooltipRenderer, 3));
                 setBorderColor(shader, "u_PushData5", (int) chooseBorderColor.invoke(tooltipRenderer, 2));
             }
-            RenderDebug.step("BG-SDF", "state ready — calling ModernUI drawRoundedBackground");
 
             // Save ModelViewStack depth to restore in case the method throws
             // and leaves the stack unbalanced (which causes "max stack size of 16" crashes).
@@ -200,7 +192,6 @@ public final class ModernUIBackgroundRenderer {
                 // Params: GuiGraphics, Matrix4f, x, y, width, height, useGradient, zLevel
                 drawRoundedBgMethod.invoke(tooltipRenderer,
                         gr, pose, x, y, contentWidth, contentHeight, false, 0);
-                RenderDebug.step("BG-SDF", "ModernUI drawRoundedBackground complete");
             } finally {
                 // Restore ModelViewStack depth. ModernUI's method pushes/pops internally,
                 // and if it throws, the stack is left unbalanced. This ensures balance.
@@ -208,7 +199,6 @@ public final class ModernUIBackgroundRenderer {
                     int currentDepth = modelViewStackCurrentField.getInt(modelViewStack);
                     int diff = currentDepth - originalDepth;
                     if (diff > 0) {
-                        RenderDebug.step("BG-SDF", "restoring " + diff + " unbalanced ModelViewStack entries");
                         for (int i = 0; i < diff; i++) {
                             modelViewStack.popMatrix();
                         }
@@ -216,8 +206,7 @@ public final class ModernUIBackgroundRenderer {
                     }
                 }
             }
-        } catch (Exception e) {
-            RenderDebug.step("BG-SDF", "EXCEPTION: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+        } catch (Exception ignored) {
         }
     }
 

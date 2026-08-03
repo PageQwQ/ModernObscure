@@ -1,7 +1,6 @@
 package dev.waterfrog.modernobscurecompat.mixin;
 
 import dev.waterfrog.modernobscurecompat.compat.CompatState;
-import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -84,26 +83,19 @@ public abstract class MixinGuiGraphics {
     private void beforeTooltipRender(Font font, List<ClientTooltipComponent> components,
                                       int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                       CallbackInfo ci) {
-        RenderDebug.startFrame("MixinGuiGraphics.beforeTooltipRender");
-        RenderDebug.step("GuiGraphics", "HEAD — components=" + components.size());
         // Clear any leftover flag from previous render
         CompatState.setRendering(false);
 
         boolean modernUIDisabled = disableModernUITooltip();
-        RenderDebug.step("GuiGraphics", "MUI sTooltip disabled=" + modernUIDisabled);
         var self = (GuiGraphics) (Object) this;
-        RenderDebug.step("GuiGraphics", "calling obscure TooltipRenderer.render()");
         boolean handled = callObscureTooltipRenderer(self, font, components, mouseX, mouseY, positioner);
 
         if (handled) {
-            RenderDebug.step("GuiGraphics", "handled=true → cancel vanilla, keep RENDERING flag");
             ci.cancel();
             // Keep RENDERING flag set to block obscure's own HEAD injector
             // from double-rendering. The flag will be cleared at start of next HEAD.
             return;
         }
-
-        RenderDebug.step("GuiGraphics", "handled=false, fallback to normal render");
         // obscure didn't handle → clear flag immediately so obscure's own HEAD
         // can still call render (returns false, harmless)
         CompatState.setRendering(false);
@@ -117,7 +109,6 @@ public abstract class MixinGuiGraphics {
     private void afterTooltipRender(Font font, List<ClientTooltipComponent> components,
                                      int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                      CallbackInfo ci) {
-        RenderDebug.step("GuiGraphics", "TAIL — re-enable MUI sTooltip, clear RENDERING");
         enableModernUITooltip();
         CompatState.setRendering(false);
     }

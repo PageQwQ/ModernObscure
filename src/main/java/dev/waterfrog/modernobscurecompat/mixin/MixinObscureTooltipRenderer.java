@@ -5,7 +5,6 @@ import dev.obscuria.tooltips.client.TooltipRenderer;
 import dev.obscuria.tooltips.client.TooltipState;
 import dev.waterfrog.modernobscurecompat.compat.CompatState;
 import dev.waterfrog.modernobscurecompat.compat.ModernUIBackgroundRenderer;
-import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -60,17 +59,13 @@ public abstract class MixinObscureTooltipRenderer {
                                           int mouseX, int mouseY,
                                           ClientTooltipPositioner positioner,
                                           CallbackInfoReturnable<Boolean> cir) {
-        RenderDebug.startFrame("obscure.TooltipRenderer.render");
-        RenderDebug.step("HEAD", "guardDoubleRender - entry");
         if (CompatState.isRendering()) {
-            RenderDebug.step("HEAD", "double render blocked -> return false");
             cir.setReturnValue(false);
             return;
         }
         CompatState.setRendering(true);
         savedComponents.set(components);
         savedFont.set(font);
-        RenderDebug.step("HEAD", "setRendering=true, proceed");
     }
 
     @Inject(method = "render", at = @At("RETURN"))
@@ -79,7 +74,12 @@ public abstract class MixinObscureTooltipRenderer {
                                     int mouseX, int mouseY,
                                     ClientTooltipPositioner positioner,
                                     CallbackInfoReturnable<Boolean> cir) {
-        RenderDebug.step("RETURN", "afterRender - final flush & AppleSkin re-render");
+        // Buffered slot/icon geometry is only drawn at this flush. Epic styles disable
+        // blend (RayGlow), so re-enable it here or the semi-transparent item_slot
+        // texture would be flushed opaque white.
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         graphics.flush();
 
         // Re-render AppleSkin FoodOverlay at the correct position.
@@ -92,7 +92,6 @@ public abstract class MixinObscureTooltipRenderer {
         Integer posY = savedPosY.get();
         Integer height = savedHeight.get();
         if (comps == null || fnt == null || margin == null || posX == null || posY == null || height == null) {
-            RenderDebug.step("AFTER", "missing saved data, skip");
             savedComponents.remove();
             savedFont.remove();
             savedMargin.remove();
@@ -104,9 +103,6 @@ public abstract class MixinObscureTooltipRenderer {
 
         // Clean state for AppleSkin
         RenderSystem.disableDepthTest();
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         RenderSystem.depthFunc(519); // GL_ALWAYS
 
         // Find AppleSkin component and calculate its Y position at the bottom of content.
@@ -119,7 +115,6 @@ public abstract class MixinObscureTooltipRenderer {
             if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
                 int componentX = margin + posX;
                 int componentY = posY + height - margin + 2 - comp.getHeight();
-                RenderDebug.step("AFTER", "rendering AppleSkin at (" + componentX + "," + componentY + ")");
                 try {
                     graphics.pose().pushPose();
                     graphics.pose().translate(0f, 0f, 400f);
@@ -127,9 +122,7 @@ public abstract class MixinObscureTooltipRenderer {
                     drawItems.invoke(comp, fnt, componentX, componentY, graphics);
                     graphics.pose().popPose();
                     graphics.flush();
-                    RenderDebug.step("AFTER", "AppleSkin rendered successfully");
-                } catch (Exception e) {
-                    RenderDebug.step("AFTER", "AppleSkin failed: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                } catch (Exception ignored) {
                 }
                 break;
             }
@@ -146,14 +139,11 @@ public abstract class MixinObscureTooltipRenderer {
     @Redirect(method = "render", at = @At(value = "INVOKE",
             target = "Ldev/obscuria/tooltips/client/TooltipState;renderPanel(Lnet/minecraft/client/gui/GuiGraphics;Lorg/joml/Vector2ic;II)V"))
     private static void redirectRenderPanel(TooltipState state, GuiGraphics graphics, Vector2ic pos, int width, int height) {
-        RenderDebug.step("PANEL", "redirect — pos=(" + pos.x() + "," + pos.y() + ") size=" + width + "x" + height);
         if (!isModernUIAvailable()) {
-            RenderDebug.step("PANEL", "ModernUI not available, original renderPanel");
             state.renderPanel(graphics, pos, width, height);
             return;
         }
         try {
-            RenderDebug.step("PANEL", "buffer SDF bg via ModernUI");
             Matrix4f pose = graphics.pose().last().pose();
             // Save position for AppleSkin rendering. The content starts at
             // (pos.x + margin, pos.y + margin) where margin = ClientConfig.CONTENT_MARGIN.
@@ -166,7 +156,6 @@ public abstract class MixinObscureTooltipRenderer {
 
             ModernUIBackgroundRenderer.drawRoundedBackground(
                     graphics, pose, (float) pos.x(), (float) pos.y(), width, height, state);
-            RenderDebug.step("PANEL", "SDF bg buffered");
 
             // Flush SDF background and reset render state.
             graphics.flush();
@@ -175,9 +164,7 @@ public abstract class MixinObscureTooltipRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.depthFunc(519); // GL_ALWAYS
-            RenderDebug.step("PANEL", "render state reset after SDF");
         } catch (Exception e) {
-            RenderDebug.step("PANEL", "SDF bg failed, fallback: " + e.getClass().getSimpleName());
             state.renderPanel(graphics, pos, width, height);
         }
     }
@@ -185,12 +172,10 @@ public abstract class MixinObscureTooltipRenderer {
     @Redirect(method = "render", at = @At(value = "INVOKE",
             target = "Ldev/obscuria/tooltips/client/TooltipState;renderFrame(Lnet/minecraft/client/gui/GuiGraphics;Lorg/joml/Vector2ic;II)V"))
     private static void redirectRenderFrame(TooltipState state, GuiGraphics graphics, Vector2ic pos, int width, int height) {
-        RenderDebug.step("FRAME", "redirect — pos=(" + pos.x() + "," + pos.y() + ") size=" + width + "x" + height);
         if (!isModernUIAvailable()) {
-            RenderDebug.step("FRAME", "ModernUI not available, original renderFrame");
             state.renderFrame(graphics, pos, width, height);
             return;
         }
-        RenderDebug.step("FRAME", "SKIP — SDF background already buffered");
+        // SKIP — SDF background already buffered with border included
     }
 }

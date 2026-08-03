@@ -2,7 +2,6 @@ package dev.waterfrog.modernobscurecompat.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.obscuria.tooltips.client.component.HeaderComponent;
-import dev.waterfrog.modernobscurecompat.debug.RenderDebug;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
@@ -37,9 +36,12 @@ public abstract class MixinHeaderComponent {
     @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
+        // item_slot.png 的半透明边框必须带混合渲染；epic 等带特效的样式
+        // （RayGlow 会调用 disableBlend）会关闭 blend，导致边框不透明变白。
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         // Reset shader color to white before drawing the slot texture.
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        RenderDebug.step("SLOT", "drawing item_slot at (" + x + "," + y + ")");
         graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
     }
 
