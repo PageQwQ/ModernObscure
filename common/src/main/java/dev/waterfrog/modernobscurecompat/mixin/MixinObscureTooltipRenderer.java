@@ -112,14 +112,32 @@ public abstract class MixinObscureTooltipRenderer {
         //   last component Y = pos.y + margin + contentHeight - lastCompHeight
         //                    = pos.y + height - margin + 2 - lastCompHeight
         for (ClientTooltipComponent comp : comps) {
-            if (comp.getClass().getName().equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")) {
+            // Fabric 3.0.x names the component FoodOverlay, NeoForge 3.0.9+ renamed it
+            // FoodTooltipRenderer. Both expose the same (Font,int,int,GuiGraphics) draw method.
+            String compName = comp.getClass().getName();
+            if (compName.equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")
+                    || compName.equals("squeek.appleskin.client.TooltipOverlayHandler$FoodTooltipRenderer")) {
                 int componentX = margin + posX;
                 int componentY = posY + height - margin + 2 - comp.getHeight();
                 try {
                     graphics.pose().pushPose();
                     graphics.pose().translate(0f, 0f, 400f);
-                    Method drawItems = comp.getClass().getMethod("method_32666", Font.class, int.class, int.class, GuiGraphics.class);
-                    drawItems.invoke(comp, fnt, componentX, componentY, graphics);
+                    // Method name differs between loaders: method_32666 on Fabric,
+                    // renderItems on NeoForge. Match by signature instead.
+                    Method drawItems = null;
+                    for (Method m : comp.getClass().getDeclaredMethods()) {
+                        Class<?>[] params = m.getParameterTypes();
+                        if (params.length == 4 && params[0] == Font.class && params[3] == GuiGraphics.class) {
+                            drawItems = m;
+                            break;
+                        }
+                    }
+                    if (drawItems != null) {
+                        // NeoForge's FoodTooltipRenderer is package-private, so the invoke
+                        // would throw IllegalAccessException without this.
+                        drawItems.setAccessible(true);
+                        drawItems.invoke(comp, fnt, componentX, componentY, graphics);
+                    }
                     graphics.pose().popPose();
                     graphics.flush();
                 } catch (Exception ignored) {

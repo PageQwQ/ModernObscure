@@ -1,0 +1,24 @@
+base {
+    archivesName = "${rootProject.archives_base_name}-fabric"
+}
+
+dependencies {
+    modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+
+    // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
+    modCompileOnly files(rootProject.file("libs/obscure_tooltips-fabric-${rootProject.obscure_tooltips_version}.jar"))
+    modCompileOnly files(rootProject.file("libs/fragmentum-fabric-${rootProject.fragmentum_version}.jar"))
+}
+
+jar {
+    // Bundle all compiled classes + resources from common into the final jar
+    from project(':common').sourceSets.main.output
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}

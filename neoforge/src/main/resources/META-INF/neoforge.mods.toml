@@ -1,0 +1,40 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "Apache-2.0"
+
+[[mods]]
+modId = "modernobscurecompat"
+version = "${version}"
+displayName = "ModernObscureCompat"
+description = "Compatibility layer: renders ModernUI rounded tooltip backgrounds with obscure-tooltips features."
+
+[[dependencies.modernobscurecompat]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.modernobscurecompat]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.21.2)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.modernobscurecompat]]
+modId = "obscure_tooltips"
+type = "required"
+versionRange = "*"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.modernobscurecompat]]
+modId = "modernui"
+type = "optional"
+versionRange = "*"
+ordering = "NONE"
+side = "CLIENT"
+
+[[mixins]]
+config = "modernobscurecompat.mixins.json"

@@ -33,6 +33,8 @@ public abstract class MixinHeaderComponent {
         return modernUIAvailable;
     }
 
+    // Fabric jar of obscure-tooltips names this method_32666 (intermediary),
+    // NeoForge jar names it renderImage (Mojang). Regex matches either.
     @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;

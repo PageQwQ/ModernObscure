@@ -1,0 +1,13 @@
+base {
+    archivesName = "${rootProject.archives_base_name}-common"
+}
+
+dependencies {
+    // Provides the Sponge Mixin API used by the mixin classes (compile-time only).
+    modCompileOnly "net.fabricmc:fabric-loader:${rootProject.loader_version}"
+
+    // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
+    // Fabric variant jars contain identical bytecode for the shared API classes.
+    modCompileOnly files(rootProject.file("libs/obscure_tooltips-fabric-${rootProject.obscure_tooltips_version}.jar"))
+    modCompileOnly files(rootProject.file("libs/fragmentum-fabric-${rootProject.fragmentum_version}.jar"))
+}
