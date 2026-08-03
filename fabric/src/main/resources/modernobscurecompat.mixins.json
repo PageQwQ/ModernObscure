@@ -6,9 +6,11 @@
   "mixinPriority": 0,
   "refmap": "modernobscure-compat-common-common-refmap.json",
   "client": [
+    "MixinClientConfig",
     "MixinGuiGraphics",
     "MixinHeaderComponent",
-    "MixinObscureTooltipRenderer"
+    "MixinObscureTooltipRenderer",
+    "MixinTooltipRenderer"
   ],
   "injectors": {
     "defaultRequire": 1

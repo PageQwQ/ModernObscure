@@ -5,9 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixinPriority": 0,
   "client": [
+    "MixinClientConfig",
     "MixinGuiGraphics",
     "MixinHeaderComponent",
-    "MixinObscureTooltipRenderer"
+    "MixinObscureTooltipRenderer",
+    "MixinTooltipRenderer"
   ],
   "injectors": {
     "defaultRequire": 1
