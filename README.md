@@ -41,8 +41,6 @@ Built JARs:
 - `fabric/build/libs/modernobscure-compat-fabric-1.3.0.jar`
 - `forge/build/libs/modernobscure-compat-forge-1.3.0.jar`
 
-> Looking for Minecraft 1.21.1 (Fabric & NeoForge)? Check out the `main` branch.
-
 ## Technical Notes
 
 - Multi-loader project using Architectury Loom: shared code lives in `common/`, with per-loader `fabric/` and `forge/` modules for loader-specific metadata
