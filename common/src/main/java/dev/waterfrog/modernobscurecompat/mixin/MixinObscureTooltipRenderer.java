@@ -80,7 +80,8 @@ public abstract class MixinObscureTooltipRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        graphics.flush();
+        // 1.20.1 has no GuiGraphics.flush() (added 1.20.2); endBatch flushes the buffer
+        graphics.bufferSource().endBatch();
 
         // Re-render AppleSkin FoodOverlay at the correct position.
         // The component loop in obscure's render() handles the renderImage call,
@@ -139,7 +140,8 @@ public abstract class MixinObscureTooltipRenderer {
                         drawItems.invoke(comp, fnt, componentX, componentY, graphics);
                     }
                     graphics.pose().popPose();
-                    graphics.flush();
+                    // 1.20.1 has no GuiGraphics.flush() (added 1.20.2); endBatch flushes the buffer
+                    graphics.bufferSource().endBatch();
                 } catch (Exception ignored) {
                 }
                 break;
@@ -176,13 +178,16 @@ public abstract class MixinObscureTooltipRenderer {
                     graphics, pose, (float) pos.x(), (float) pos.y(), width, height, state);
 
             // Flush SDF background and reset render state.
-            graphics.flush();
+            // 1.20.1 has no GuiGraphics.flush() (added 1.20.2); endBatch flushes the buffer
+            graphics.bufferSource().endBatch();
             RenderSystem.disableDepthTest();
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.depthFunc(519); // GL_ALWAYS
         } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger("ModernObscureCompat")
+                    .error("ModernObscureCompat: redirectRenderPanel fallback to obscure panel", e);
             state.renderPanel(graphics, pos, width, height);
         }
     }

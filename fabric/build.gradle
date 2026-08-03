@@ -3,6 +3,8 @@ base {
 }
 
 dependencies {
+    api project(path: ':common', configuration: 'namedElements')
+
     modImplementation "net.fabricmc:fabric-loader:${rootProject.loader_version}"
 
     // obscure-tooltips -- compile-time only, provided at runtime (not bundled)

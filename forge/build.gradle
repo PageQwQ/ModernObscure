@@ -1,0 +1,32 @@
+base {
+    archivesName = "${rootProject.archives_base_name}-forge"
+}
+
+dependencies {
+    api project(path: ':common', configuration: 'namedElements')
+
+    forge "net.minecraftforge:forge:${rootProject.forge_version}"
+
+    // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
+    modCompileOnly files(rootProject.file("libs/obscure_tooltips-forge-${rootProject.obscure_tooltips_version}.jar"))
+    modCompileOnly files(rootProject.file("libs/fragmentum-forge-${rootProject.fragmentum_version}.jar"))
+}
+
+jar {
+    // Bundle all compiled classes + resources from common into the final jar
+    from project(':common').sourceSets.main.output
+    manifest {
+        // Forge 1.20.1 registers mixin configs via this MANIFEST.MF attribute
+        // (mixin 0.8.5 MixinPlatformAgentDefault reads "MixinConfigs" from the
+        // jar manifest; the mods.toml [[mixins]] section is not parsed by Forge 1.20.1)
+        attributes "MixinConfigs": "modernobscurecompat.mixins.json"
+    }
+}
+
+processResources {
+    inputs.property "version", project.version
+    filteringCharset "UTF-8"
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
+    }
+}

@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinHeaderComponent {
 
     @Unique
-    private static final ResourceLocation ITEM_SLOT = ResourceLocation.fromNamespaceAndPath("modernobscurecompat", "textures/gui/item_slot.png");
+    private static final ResourceLocation ITEM_SLOT = new ResourceLocation("modernobscurecompat", "textures/gui/item_slot.png");
 
     @Unique
     private static volatile Boolean modernUIAvailable;
@@ -33,9 +33,9 @@ public abstract class MixinHeaderComponent {
         return modernUIAvailable;
     }
 
-    // Fabric jar of obscure-tooltips names this method_32666 (intermediary),
-    // NeoForge jar names it renderImage (Mojang). Regex matches either.
-    @Inject(method = "renderImage", at = @At("HEAD"), remap = false)
+    // Forge 1.20.1 jar of obscure-tooltips is SRG-obfuscated at runtime,
+    // so the method is m_183452_ (javap-confirmed), not renderImage.
+    @Inject(method = "m_183452_", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
         // item_slot.png 的半透明边框必须带混合渲染；epic 等带特效的样式
@@ -47,7 +47,7 @@ public abstract class MixinHeaderComponent {
         graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
     }
 
-    @Inject(method = "renderImage", at = @At("RETURN"), remap = false)
+    @Inject(method = "m_183452_", at = @At("RETURN"), remap = false)
     private void afterRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
         // Reset shader color to white after icon rendering.

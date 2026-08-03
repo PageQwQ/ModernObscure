@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class MixinHeaderComponent {
 
     @Unique
-    private static final ResourceLocation ITEM_SLOT = ResourceLocation.fromNamespaceAndPath("modernobscurecompat", "textures/gui/item_slot.png");
+    private static final ResourceLocation ITEM_SLOT = new ResourceLocation("modernobscurecompat", "textures/gui/item_slot.png");
 
     @Unique
     private static volatile Boolean modernUIAvailable;

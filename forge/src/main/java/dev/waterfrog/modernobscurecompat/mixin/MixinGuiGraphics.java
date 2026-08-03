@@ -79,7 +79,10 @@ public abstract class MixinGuiGraphics {
         }
     }
 
-    @Inject(method = "renderTooltipInternal", at = @At("HEAD"), cancellable = true)
+    // Forge 1.20.1 runtime uses SRG names for Minecraft methods; GuiGraphics.
+    // renderTooltipInternal is m_280497_ there (obscure-tooltips' own refmap
+    // confirms this mapping). remap=false since no refmap is shipped for forge.
+    @Inject(method = "m_280497_", at = @At("HEAD"), cancellable = true, remap = false)
     private void beforeTooltipRender(Font font, List<ClientTooltipComponent> components,
                                       int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                       CallbackInfo ci) {
@@ -105,7 +108,7 @@ public abstract class MixinGuiGraphics {
         }
     }
 
-    @Inject(method = "renderTooltipInternal", at = @At("TAIL"))
+    @Inject(method = "m_280497_", at = @At("TAIL"), remap = false)
     private void afterTooltipRender(Font font, List<ClientTooltipComponent> components,
                                      int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                      CallbackInfo ci) {

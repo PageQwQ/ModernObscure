@@ -1,5 +1,5 @@
 modLoader = "javafml"
-loaderVersion = "[1,)"
+loaderVersion = "[46,)"
 license = "Apache-2.0"
 
 [[mods]]
@@ -8,30 +8,31 @@ version = "${version}"
 displayName = "ModernObscureCompat"
 description = "Compatibility layer: renders ModernUI rounded tooltip backgrounds with obscure-tooltips features."
 
+# Forge 1.20.1 uses mandatory=true/false; the type = "required" form is NeoForge 1.21+ only
 [[dependencies.modernobscurecompat]]
-modId = "neoforge"
-type = "required"
-versionRange = "[21.1.0,)"
+modId = "forge"
+mandatory = true
+versionRange = "[46,)"
 ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.modernobscurecompat]]
 modId = "minecraft"
-type = "required"
-versionRange = "[1.21.1,1.21.2)"
+mandatory = true
+versionRange = "[1.20.1,1.20.2)"
 ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.modernobscurecompat]]
 modId = "obscure_tooltips"
-type = "required"
+mandatory = true
 versionRange = "*"
 ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.modernobscurecompat]]
 modId = "modernui"
-type = "optional"
+mandatory = false
 versionRange = "*"
 ordering = "NONE"
 side = "CLIENT"

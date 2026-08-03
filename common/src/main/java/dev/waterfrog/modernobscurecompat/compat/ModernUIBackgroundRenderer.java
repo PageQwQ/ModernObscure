@@ -1,14 +1,18 @@
 package dev.waterfrog.modernobscurecompat.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import dev.obscuria.tooltips.client.TooltipState;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Deque;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Renders ModernUI-style rounded SDF tooltip backgrounds.
@@ -40,8 +44,10 @@ public final class ModernUIBackgroundRenderer {
 
     private static boolean reflectionInitialized;
 
-    // Reflection handle for Matrix4fStack.current to save/restore stack depth
-    private static Field modelViewStackCurrentField;
+    private static final Logger LOGGER = LoggerFactory.getLogger("ModernObscureCompat");
+
+    // Reflection handle for PoseStack.poseStack (Deque) to save/restore stack depth
+    private static Field poseStackDequeField;
 
     private static void initReflection() {
         if (reflectionInitialized) return;
@@ -73,10 +79,17 @@ public final class ModernUIBackgroundRenderer {
                     boolean.class, int.class);
             drawRoundedBgMethod.setAccessible(true);
 
-            // For saving/restoring ModelViewStack depth
-            modelViewStackCurrentField = Matrix4fStack.class.getDeclaredField("current");
-            modelViewStackCurrentField.setAccessible(true);
-        } catch (Exception ignored) {
+            // For saving/restoring ModelViewStack depth. Forge 1.20.1 SRG-renames
+            // the field, so find it by type (Deque) instead of by name.
+            for (Field f : PoseStack.class.getDeclaredFields()) {
+                if (Deque.class.isAssignableFrom(f.getType())) {
+                    f.setAccessible(true);
+                    poseStackDequeField = f;
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("ModernObscureCompat: reflection init failed", e);
         }
     }
 
@@ -91,6 +104,7 @@ public final class ModernUIBackgroundRenderer {
 
         initReflection();
         if (tooltipRendererClass == null) {
+            LOGGER.error("ModernObscureCompat: TooltipRenderer class not found");
             return;
         }
 
@@ -101,6 +115,7 @@ public final class ModernUIBackgroundRenderer {
             trField.setAccessible(true);
             Object tooltipRenderer = trField.get(uiManager);
             if (tooltipRenderer == null) {
+                LOGGER.error("ModernObscureCompat: UIManager mTooltipRenderer is null");
                 return;
             }
 
@@ -144,6 +159,7 @@ public final class ModernUIBackgroundRenderer {
 
             ShaderInstance shader = (ShaderInstance) getShaderTooltipMethod.invoke(null);
             if (shader == null) {
+                LOGGER.error("ModernObscureCompat: tooltip shader is null");
                 return;
             }
 
@@ -180,10 +196,11 @@ public final class ModernUIBackgroundRenderer {
 
             // Save ModelViewStack depth to restore in case the method throws
             // and leaves the stack unbalanced (which causes "max stack size of 16" crashes).
-            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
+            // 1.20.1 uses PoseStack (JOML Matrix4fStack only arrived in 1.20.2+).
+            PoseStack modelViewStack = RenderSystem.getModelViewStack();
             int originalDepth = 0;
-            if (modelViewStackCurrentField != null) {
-                originalDepth = modelViewStackCurrentField.getInt(modelViewStack);
+            if (poseStackDequeField != null) {
+                originalDepth = ((Deque<?>) poseStackDequeField.get(modelViewStack)).size();
             }
 
             try {
@@ -195,18 +212,19 @@ public final class ModernUIBackgroundRenderer {
             } finally {
                 // Restore ModelViewStack depth. ModernUI's method pushes/pops internally,
                 // and if it throws, the stack is left unbalanced. This ensures balance.
-                if (modelViewStackCurrentField != null) {
-                    int currentDepth = modelViewStackCurrentField.getInt(modelViewStack);
+                if (poseStackDequeField != null) {
+                    int currentDepth = ((Deque<?>) poseStackDequeField.get(modelViewStack)).size();
                     int diff = currentDepth - originalDepth;
                     if (diff > 0) {
                         for (int i = 0; i < diff; i++) {
-                            modelViewStack.popMatrix();
+                            modelViewStack.popPose();
                         }
                         RenderSystem.applyModelViewMatrix();
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.error("ModernObscureCompat: drawRoundedBackground failed", e);
         }
     }
 
