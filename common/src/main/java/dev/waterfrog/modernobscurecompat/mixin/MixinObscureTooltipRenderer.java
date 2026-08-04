@@ -153,11 +153,12 @@ public abstract class MixinObscureTooltipRenderer {
         savedPosY.remove();
         savedHeight.remove();
 
-        // Restore the vanilla default depth function. The SDF background and AppleSkin
-        // re-render above set GL_ALWAYS, which leaks into other renderers that assume
-        // GL_LEQUAL — e.g. Simulated's creative-tab banners enable depth testing and
-        // layer their text against the depth buffer, producing wrong layering.
-        RenderSystem.depthFunc(513);
+        // Restore the vanilla default depth state. The SDF background and AppleSkin
+        // re-render leave GL_ALWAYS + depth test off, and Simulated's banners draw
+        // with the current GL state — GL_LESS strict comparison fails at equal depth
+        // (GUI sprites sit at far-plane depth) and the whole banner vanishes.
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(515); // GL_LEQUAL — vanilla default
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
@@ -168,6 +169,13 @@ public abstract class MixinObscureTooltipRenderer {
             return;
         }
         try {
+            // Flush pending screen geometry BEFORE ModernUI's drawRoundedBackground
+            // rewrites the model-view matrix. Without this, the whole screen's buffered
+            // content is re-drawn with that matrix applied — shifted by the tooltip
+            // center and lifted to z=400 — writing near depth across the entire screen
+            // (Simulated's banners then fail the LEQUAL test and vanish entirely).
+            graphics.flush();
+
             Matrix4f pose = graphics.pose().last().pose();
             // Save position for AppleSkin rendering. The content starts at
             // (pos.x + margin, pos.y + margin) where margin = ClientConfig.CONTENT_MARGIN.
