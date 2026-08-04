@@ -154,6 +154,12 @@ public abstract class MixinObscureTooltipRenderer {
         savedPosX.remove();
         savedPosY.remove();
         savedHeight.remove();
+
+        // Restore the vanilla default depth function. The SDF background and AppleSkin
+        // re-render above set GL_ALWAYS, which leaks into other renderers that assume
+        // GL_LEQUAL — e.g. Simulated's creative-tab banners enable depth testing and
+        // layer their text against the depth buffer, producing wrong layering.
+        RenderSystem.depthFunc(513);
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
