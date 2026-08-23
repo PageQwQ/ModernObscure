@@ -8,7 +8,8 @@
   "client": [
     "MixinGuiGraphics",
     "MixinHeaderComponent",
-    "MixinObscureTooltipRenderer"
+    "MixinObscureTooltipRenderer",
+    "MixinRenderSystem"
   ],
   "injectors": {
     "defaultRequire": 1

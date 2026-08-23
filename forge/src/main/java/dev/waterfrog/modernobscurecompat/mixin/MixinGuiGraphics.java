@@ -1,6 +1,9 @@
 package dev.waterfrog.modernobscurecompat.mixin;
 
 import dev.waterfrog.modernobscurecompat.compat.CompatState;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.List;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -11,9 +14,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.List;
 
 @Mixin(value = GuiGraphics.class, priority = 2000)
 public abstract class MixinGuiGraphics {
@@ -89,6 +89,12 @@ public abstract class MixinGuiGraphics {
         // Clear any leftover flag from previous render
         CompatState.setRendering(false);
 
+        // Route ALL tooltips (including TACZ grouped ones) through obscure's
+        // renderer so every item keeps the same panel style. TACZ gun tooltips
+        // render their ammo icon via GuiGraphics.renderItem, which flushes the
+        // buffer mid-way with text still pending; MixinObscureTooltipRenderer
+        // pushes the fog out before the component loop so that mid-loop flush
+        // draws the glyphs correctly instead of fogging them to black.
         boolean modernUIDisabled = disableModernUITooltip();
         var self = (GuiGraphics) (Object) this;
         boolean handled = callObscureTooltipRenderer(self, font, components, mouseX, mouseY, positioner);
