@@ -30,3 +30,8 @@ run/
 *.swp
 *.swo
 *~
+
+# Dev test tooling (absolute paths, machine-specific)
+autotest-runtime-deps.txt
+# Eclipse output
+bin/

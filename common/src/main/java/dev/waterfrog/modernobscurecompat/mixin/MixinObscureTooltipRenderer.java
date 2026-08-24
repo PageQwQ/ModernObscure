@@ -18,11 +18,27 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 @Mixin(value = TooltipRenderer.class, remap = true)
 public abstract class MixinObscureTooltipRenderer {
+
+    /**
+     * Lift applied to ALL tooltip content (text glyphs and images alike)
+     * while the ModernUI SDF background is active. The SDF background is
+     * drawn with GuiRenderType.tooltip(), whose state shards enable
+     * LEQUAL depth test WITH depth writes at z≈400 across the whole panel;
+     * content render types re-apply LEQUAL at draw time no matter what GL
+     * state we set beforehand. Content vertices are CPU-transformed through
+     * a different matrix path than the background quad, so equal-z fragments
+     * can lose the LEQUAL test by floating-point rounding on some GPUs —
+     * ModernUI's own TooltipRenderer works around this exact issue by
+     * lifting its text by 0.1 ("text to be discarded by LEqual depth test
+     * on some GPUs"). obscure-tooltips' component loop has no such lift,
+     * so we add one here for every component it renders.
+     */
+    @Unique
+    private static final float CONTENT_Z_LIFT = 0.1F;
 
     @Unique
     private static volatile Boolean modernUIAvailable;
@@ -31,14 +47,6 @@ public abstract class MixinObscureTooltipRenderer {
     private static final ThreadLocal<List<ClientTooltipComponent>> savedComponents = new ThreadLocal<>();
     @Unique
     private static final ThreadLocal<Font> savedFont = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedMargin = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedPosY = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedPosX = new ThreadLocal<>();
-    @Unique
-    private static final ThreadLocal<Integer> savedHeight = new ThreadLocal<>();
 
     @Unique
     private static boolean isModernUIAvailable() {
@@ -51,6 +59,40 @@ public abstract class MixinObscureTooltipRenderer {
             }
         }
         return modernUIAvailable;
+    }
+
+    /**
+     * Bakes the content z-lift into the base pose right before obscure pushes
+     * its frame pose (the second pushPose in render()). The frame translate
+     * and pop that follow are unaffected, and every matrix the component loop
+     * captures afterwards (renderText AND renderImage) includes the lift, so
+     * text, item icons and any custom-drawn content from other mods all clear
+     * the SDF background's depth writes. PoseStack.pushPose has different
+     * runtime names per loader/environment; exactly one of these variants can
+     * match in a given environment (require = 0 keeps the others silent).
+     */
+    @Inject(method = "render", at = @At(value = "INVOKE",
+            target = "Lcom/mojang/blaze3d/vertex/PoseStack;pushPose()V", ordinal = 1, remap = false), require = 0)
+    private static void liftContentMojmap(GuiGraphics graphics, Font font,
+                                          List<ClientTooltipComponent> components,
+                                          int mouseX, int mouseY,
+                                          ClientTooltipPositioner positioner,
+                                          CallbackInfoReturnable<Boolean> cir) {
+        if (isModernUIAvailable()) {
+            graphics.pose().translate(0.0F, 0.0F, CONTENT_Z_LIFT);
+        }
+    }
+
+    @Inject(method = "render", at = @At(value = "INVOKE",
+            target = "Lcom/mojang/blaze3d/vertex/PoseStack;method_22903()V", ordinal = 1, remap = false), require = 0)
+    private static void liftContentIntermediary(GuiGraphics graphics, Font font,
+                                                List<ClientTooltipComponent> components,
+                                                int mouseX, int mouseY,
+                                                ClientTooltipPositioner positioner,
+                                                CallbackInfoReturnable<Boolean> cir) {
+        if (isModernUIAvailable()) {
+            graphics.pose().translate(0.0F, 0.0F, CONTENT_Z_LIFT);
+        }
     }
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
@@ -80,85 +122,26 @@ public abstract class MixinObscureTooltipRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        // Re-assert pushed-out fog before the final flush in case anything in the
+        // component loop changed it (the fog guard freezes setters; this covers
+        // draws reading stale uniform values).
+        RenderSystem.setShaderFogStart(10000.0F);
+        RenderSystem.setShaderFogEnd(20000.0F);
         graphics.flush();
-
-        // Re-render AppleSkin FoodOverlay at the correct position.
-        // The component loop in obscure's render() handles the renderImage call,
-        // but the SDF shader may corrupt GL state. We re-render here with clean state.
-        List<ClientTooltipComponent> comps = savedComponents.get();
-        Font fnt = savedFont.get();
-        Integer margin = savedMargin.get();
-        Integer posX = savedPosX.get();
-        Integer posY = savedPosY.get();
-        Integer height = savedHeight.get();
-        if (comps == null || fnt == null || margin == null || posX == null || posY == null || height == null) {
-            savedComponents.remove();
-            savedFont.remove();
-            savedMargin.remove();
-            savedPosX.remove();
-            savedPosY.remove();
-            savedHeight.remove();
-            return;
-        }
-
-        // Clean state for AppleSkin
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthFunc(519); // GL_ALWAYS
-
-        // Find AppleSkin component and calculate its Y position at the bottom of content.
-        // In obscure's render():
-        //   height = 2*margin + contentHeight - 2  (contentHeight = sum of all comp heights)
-        //   component rendering starts at: pos.y + margin
-        //   last component Y = pos.y + margin + contentHeight - lastCompHeight
-        //                    = pos.y + height - margin + 2 - lastCompHeight
-        for (ClientTooltipComponent comp : comps) {
-            // Fabric 3.0.x names the component FoodOverlay, NeoForge 3.0.9+ renamed it
-            // FoodTooltipRenderer. Both expose the same (Font,int,int,GuiGraphics) draw method.
-            String compName = comp.getClass().getName();
-            if (compName.equals("squeek.appleskin.client.TooltipOverlayHandler$FoodOverlay")
-                    || compName.equals("squeek.appleskin.client.TooltipOverlayHandler$FoodTooltipRenderer")) {
-                int componentX = margin + posX;
-                int componentY = posY + height - margin + 2 - comp.getHeight();
-                try {
-                    graphics.pose().pushPose();
-                    graphics.pose().translate(0f, 0f, 400f);
-                    // Method name differs between loaders: method_32666 on Fabric,
-                    // renderItems on NeoForge. Match by signature instead.
-                    Method drawItems = null;
-                    for (Method m : comp.getClass().getDeclaredMethods()) {
-                        Class<?>[] params = m.getParameterTypes();
-                        if (params.length == 4 && params[0] == Font.class && params[3] == GuiGraphics.class) {
-                            drawItems = m;
-                            break;
-                        }
-                    }
-                    if (drawItems != null) {
-                        // NeoForge's FoodTooltipRenderer is package-private, so the invoke
-                        // would throw IllegalAccessException without this.
-                        drawItems.setAccessible(true);
-                        drawItems.invoke(comp, fnt, componentX, componentY, graphics);
-                    }
-                    graphics.pose().popPose();
-                    graphics.flush();
-                } catch (Exception ignored) {
-                }
-                break;
-            }
-        }
 
         savedComponents.remove();
         savedFont.remove();
-        savedMargin.remove();
-        savedPosX.remove();
-        savedPosY.remove();
-        savedHeight.remove();
 
-        // Restore the vanilla default depth state. The SDF background and AppleSkin
-        // re-render leave GL_ALWAYS + depth test off, and Simulated's banners draw
-        // with the current GL state — GL_LESS strict comparison fails at equal depth
-        // (GUI sprites sit at far-plane depth) and the whole banner vanishes.
+        // Restore the vanilla default depth state. The SDF background leaves
+        // depth written across the panel, and subsequent HUD/screen geometry
+        // draws with the current GL state — GL_LESS strict comparison fails at
+        // equal depth (GUI sprites sit at far-plane depth) and whole banners
+        // vanish.
         RenderSystem.enableDepthTest();
         RenderSystem.depthFunc(515); // GL_LEQUAL — vanilla default
+        // All tooltip content (text + images from every mod) has been flushed;
+        // release the fog guard so world/HUD rendering can use fog again.
+        CompatState.closeContentWindow();
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE",
@@ -177,14 +160,6 @@ public abstract class MixinObscureTooltipRenderer {
             graphics.flush();
 
             Matrix4f pose = graphics.pose().last().pose();
-            // Save position for AppleSkin rendering. The content starts at
-            // (pos.x + margin, pos.y + margin) where margin = ClientConfig.CONTENT_MARGIN.
-            // We save pos.x/y and margin separately for position calculation.
-            savedPosX.set(pos.x());
-            savedPosY.set(pos.y());
-            savedHeight.set(height);
-            int margin = 3; // ClientConfig.CONTENT_MARGIN default
-            savedMargin.set(margin);
 
             ModernUIBackgroundRenderer.drawRoundedBackground(
                     graphics, pose, (float) pos.x(), (float) pos.y(), width, height, state);
@@ -196,7 +171,15 @@ public abstract class MixinObscureTooltipRenderer {
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
             RenderSystem.depthFunc(519); // GL_ALWAYS
+            // Push fog out BEFORE any content is buffered (GUI text is drawn with
+            // ModernUI's fogged glyph shaders), then freeze fog via MixinRenderSystem:
+            // any mid-loop flush triggered by custom tooltip components draws
+            // buffered glyphs with clean fog.
+            RenderSystem.setShaderFogStart(10000.0F);
+            RenderSystem.setShaderFogEnd(20000.0F);
+            CompatState.openContentWindow();
         } catch (Exception e) {
+            CompatState.closeContentWindow();
             state.renderPanel(graphics, pos, width, height);
         }
     }
