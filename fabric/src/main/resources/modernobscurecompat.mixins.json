@@ -9,7 +9,8 @@
     "MixinGuiGraphics",
     "MixinHeaderComponent",
     "MixinObscureTooltipRenderer",
-    "MixinRenderSystem"
+    "MixinRenderSystem",
+    "MixinMinecraftAutotest"
   ],
   "injectors": {
     "defaultRequire": 1
