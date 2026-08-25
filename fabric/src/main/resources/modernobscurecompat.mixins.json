@@ -12,7 +12,6 @@
     "MixinHeaderComponent",
     "MixinObscureTooltipRenderer",
     "MixinRenderSystem",
-    "MixinMinecraftAutotest",
     "MixinTooltipRenderer"
   ],
   "injectors": {
