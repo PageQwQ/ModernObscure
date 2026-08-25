@@ -14,8 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = HeaderComponent.class, remap = false)
 public abstract class MixinHeaderComponent {
 
-    @Unique
-    private static final ResourceLocation ITEM_SLOT = ResourceLocation.fromNamespaceAndPath("modernobscurecompat", "textures/gui/item_slot.png");
 
     @Unique
     private static volatile Boolean modernUIAvailable;
@@ -38,13 +36,12 @@ public abstract class MixinHeaderComponent {
     @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
-        // item_slot.png 的半透明边框必须带混合渲染；epic 等带特效的样式
-        // （RayGlow 会调用 disableBlend）会关闭 blend，导致边框不透明变白。
+        // obscure's own style.slot() renders the slot background; only reset
+        // state that may have been changed by style effects (RayGlow disables
+        // blend) before the icon renders.
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        // Reset shader color to white before drawing the slot texture.
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
     }
 
     @Inject(method = "method_32666", at = @At("RETURN"), remap = false)

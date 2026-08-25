@@ -25,10 +25,10 @@ import java.util.Optional;
  * <p>Mixin handler order at the same injection point is not controllable across
  * mods, so the ModernUI option is hidden by a non-cancellable handler (those
  * always run first) and the actual rendering happens in a cancellable handler
- * with priority 500 (lower than ModernUI's and obscure-tooltips' 1000, so it
- * runs before obscure-tooltips' own handler).
+ * with priority 0 (Mixin runs lower-priority handlers first; ModernUI uses
+ * 1 and obscure-tooltips 1000, so this runs before both).
  */
-@Mixin(value = GuiGraphics.class, priority = 500)
+@Mixin(value = GuiGraphics.class, priority = 0)
 public abstract class MixinGuiGraphics {
 
     @Unique
@@ -140,7 +140,7 @@ public abstract class MixinGuiGraphics {
 
     /**
      * Cancellable: runs after ModernUI's handler (which was neutralized above
-     * for item tooltips) and before obscure-tooltips' own handler (priority 500).
+     * for item tooltips) and before obscure-tooltips' own handler.
      */
     @Inject(method = "renderTooltipInternal", at = @At("HEAD"), cancellable = true)
     private void beforeTooltipRender(Font font, List<ClientTooltipComponent> components,
