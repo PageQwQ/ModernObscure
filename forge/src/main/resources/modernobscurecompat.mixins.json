@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "dev.waterfrog.modernobscurecompat.mixin",
   "compatibilityLevel": "JAVA_17",
-  "mixinPriority": 0,
+  "mixinPriority": 2000,
   "client": [
     "MixinGuiGraphics",
     "MixinHeaderComponent",

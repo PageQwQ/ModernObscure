@@ -65,6 +65,7 @@ public abstract class MixinGuiGraphics {
         }
     }
 
+
     @Unique
     private static boolean callObscureTooltipRenderer(GuiGraphics self, Font font,
                                                        List<ClientTooltipComponent> components,
@@ -75,14 +76,42 @@ public abstract class MixinGuiGraphics {
         try {
             return (boolean) obscureRenderMethod.invoke(null, self, font, components, mouseX, mouseY, positioner);
         } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger("ModernObscureCompat").error("[diag] obscure render threw", e);
             return false;
         }
     }
 
     // Fabric runtime is intermediary; GuiGraphics.renderTooltipInternal is
-    // method_51435 there (loom-generated refmap of the old common mixin
-    // confirmed this mapping). remap=false since this file is platform-specific
-    // and the name is already the runtime one.
+    // method_51435 there. remap=false: this file is platform-specific and
+    // the name is already the runtime one (fabric-refmap is NOT referenced
+    // by the mixin config).
+    // ModernUI's own HEAD handler on renderTooltipInternal draws & cancels
+    // before our cancellable handler runs (same-point mixin ordering can't be
+    // relied upon across mods). Disable ModernUI at the top-level tooltip entry
+    // points instead, so its internal HEAD sees sTooltip=false and skips.
+    @Inject(method = "method_51446", at = @At("HEAD"), remap = false)
+    private void preRenderTooltipStack(Font font, net.minecraft.world.item.ItemStack stack, int x, int y, CallbackInfo ci) {
+        disableModernUITooltip();
+    }
+
+    @Inject(method = "method_51437", at = @At("HEAD"), remap = false)
+    private void preRenderTooltipList(Font font, java.util.List<? extends net.minecraft.network.chat.Component> lines,
+                                      java.util.Optional<net.minecraft.world.inventory.tooltip.TooltipComponent> tooltip,
+                                      int x, int y, CallbackInfo ci) {
+        disableModernUITooltip();
+    }
+
+    // Non-cancellable handlers always run before cancellable ones at the same
+    // injection point, so this reliably disables ModernUI's own tooltip takeover
+    // (sTooltip) before ModernUI's HEAD handler can draw & cancel. This solves
+    // the priority race where ModernUI's mixin (priority=1) wins over ours.
+    @Inject(method = "method_51435", at = @At("HEAD"), remap = false)
+    private void preRenderTooltipInternal(Font font, List<ClientTooltipComponent> components,
+                                          int mouseX, int mouseY, ClientTooltipPositioner positioner,
+                                          CallbackInfo ci) {
+        disableModernUITooltip();
+    }
+
     @Inject(method = "method_51435", at = @At("HEAD"), cancellable = true, remap = false)
     private void beforeTooltipRender(Font font, List<ClientTooltipComponent> components,
                                       int mouseX, int mouseY, ClientTooltipPositioner positioner,
