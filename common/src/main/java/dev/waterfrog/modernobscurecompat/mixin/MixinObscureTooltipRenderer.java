@@ -85,7 +85,7 @@ public abstract class MixinObscureTooltipRenderer {
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE",
-            target = "Lcom/mojang/blaze3d/vertex/PoseStack;method_22903()V", ordinal = 1, remap = false), require = 0)
+            target = "Lnet/minecraft/class_4587;method_22903()V", ordinal = 1, remap = false), require = 0)
     private static void liftContentIntermediary(GuiGraphics graphics, Font font,
                                                 List<ClientTooltipComponent> components,
                                                 int mouseX, int mouseY,
