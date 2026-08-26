@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import dev.obscuria.tooltips.client.component.HeaderComponent;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = HeaderComponent.class, remap = false)
 public abstract class MixinHeaderComponent {
 
+
+    @Unique
+    private static final ResourceLocation ITEM_SLOT = new ResourceLocation("modernobscurecompat", "textures/gui/item_slot.png");
 
     @Unique
     private static volatile Boolean modernUIAvailable;
@@ -35,12 +39,14 @@ public abstract class MixinHeaderComponent {
     @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
-        // obscure's own style.slot() renders the slot background; only reset
-        // state that may have been changed by style effects (RayGlow disables
-        // blend, RGB-disabling shader colors) before the icon renders.
+        // On Fabric, ModernUI's SDF background covers obscure's own slot
+        // (rendered by style.slot()); draw our slot texture as a visible
+        // fallback. Keep blend + white shader color so the semi-transparent
+        // border renders correctly.
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        graphics.blit(ITEM_SLOT, x + 1, y + 1, 0, 0, 18, 18, 18, 18);
     }
 
     @Inject(method = "method_32666", at = @At("RETURN"), remap = false)
