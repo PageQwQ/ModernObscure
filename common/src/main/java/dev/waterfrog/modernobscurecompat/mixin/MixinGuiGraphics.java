@@ -84,6 +84,7 @@ public abstract class MixinGuiGraphics {
         try {
             return (boolean) obscureRenderMethod.invoke(null, self, font, components, mouseX, mouseY, positioner);
         } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger("ModernObscureCompat").error("[diag] obscure render threw", e);
             return false;
         }
     }
@@ -151,6 +152,7 @@ public abstract class MixinGuiGraphics {
 
         var self = (GuiGraphics) (Object) this;
         boolean handled = callObscureTooltipRenderer(self, font, components, mouseX, mouseY, positioner);
+
 
         if (handled) {
             // Restore the user's ModernUI option now: a cancelled HEAD skips the
