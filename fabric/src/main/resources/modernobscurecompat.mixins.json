@@ -9,7 +9,8 @@
     "MixinGuiGraphics",
     "MixinHeaderComponent",
     "MixinObscureTooltipRenderer",
-    "MixinRenderSystem"
+    "MixinRenderSystem",
+    "MixinAbstractHeaderLayout"
   ],
   "injectors": {
     "defaultRequire": 1
