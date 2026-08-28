@@ -6,6 +6,7 @@ license = "Apache-2.0"
 modId = "modernobscurecompat"
 version = "${version}"
 displayName = "ModernObscureCompat"
+logoFile = "assets/modernobscurecompat/icon.png"
 description = "Compatibility layer: renders ModernUI rounded tooltip backgrounds with obscure-tooltips features."
 
 # Forge 1.20.1 uses mandatory=true/false; the type = "required" form is NeoForge 1.21+ only
