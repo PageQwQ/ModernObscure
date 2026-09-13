@@ -5,12 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixinPriority": 0,
   "client": [
-    "MixinClientConfig",
+    "MixinAbstractHeaderLayout",
     "MixinGameRenderer",
     "MixinGuiGraphics",
-    "MixinHeaderComponent",
+    "MixinGuiGraphicsNeoForge",
     "MixinObscureTooltipRenderer",
-    "MixinRenderSystem",
     "MixinTooltipRenderer"
   ],
   "injectors": {

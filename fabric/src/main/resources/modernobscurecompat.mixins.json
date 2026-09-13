@@ -4,14 +4,11 @@
   "package": "dev.waterfrog.modernobscurecompat.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixinPriority": 0,
-  "refmap": "modernobscure-compat-common-common-refmap.json",
   "client": [
-    "MixinClientConfig",
+    "MixinAbstractHeaderLayout",
     "MixinGameRenderer",
     "MixinGuiGraphics",
-    "MixinHeaderComponent",
     "MixinObscureTooltipRenderer",
-    "MixinRenderSystem",
     "MixinTooltipRenderer"
   ],
   "injectors": {

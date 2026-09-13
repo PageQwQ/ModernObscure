@@ -1,220 +1,128 @@
 package dev.waterfrog.modernobscurecompat.compat;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.obscuria.tooltips.client.TooltipState;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.ShaderInstance;
-import org.joml.Matrix4f;
-import org.joml.Matrix4fStack;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.world.item.ItemStack;
+import org.joml.Matrix3x2f;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * Renders ModernUI-style rounded SDF tooltip backgrounds.
- * All ModernUI access is through reflection so no compile-time dependency.
+ * Renders ModernUI-style rounded SDF tooltip backgrounds for obscure-tooltips.
+ *
+ * <p>All ModernUI access goes through reflection so the mod has no compile-time
+ * or hard runtime dependency on ModernUI; when it is absent the caller falls
+ * back to obscure-tooltips' own panel.
+ *
+ * <p>In 1.21.11 ModernUI's {@code TooltipRenderer#drawRoundedBackground} is a
+ * private instance method that computes its own uniforms and submits a
+ * {@code GradientRectangleRenderState} through the new GUI render-state system,
+ * so this class only has to prime the working color / border animation and pass
+ * the current pose and scissor rectangle.
+ *
+ * <p>ModernUI binds the {@code ModernTooltip} uniform buffer in
+ * {@code GuiRenderer.executeDrawRange} only while {@code TooltipRenderer.sTooltip}
+ * is true. The tooltip guard restores that option as soon as obscure-tooltips has
+ * submitted its draw, so the background's uniforms are bound for the frame.
  */
 public final class ModernUIBackgroundRenderer {
 
     private ModernUIBackgroundRenderer() {
     }
 
-    // ---- Cached reflection handles ----
     private static Class<?> tooltipRendererClass;
     private static Class<?> uiManagerClass;
-    private static Class<?> guiRenderTypeClass;
+    private static Class<?> muiModApiClass;
 
-    private static Field sShadowRadiusField;
-    private static Field sShadowAlphaField;
-    private static Field sFillColorField;
-    private static Field sCornerRadiusField;
-    private static Field sBorderWidthField;
+    private static Field mTooltipRendererField;
     private static Field sBorderColorCycleField;
-    private static Field hBorderField;
-    private static Field vBorderField;
 
-    private static Method getShaderTooltipMethod;
-    private static Method tooltipRenderTypeMethod;
     private static Method uiManagerGetInstanceMethod;
-    private static Method drawRoundedBgMethod;
+    private static Method computeWorkingColorMethod;
+    private static Method updateBorderColorMethod;
+    private static Method drawRoundedBackgroundMethod;
+    private static Method muiModApiGetMethod;
+    private static Method peekScissorStackMethod;
 
     private static boolean reflectionInitialized;
+    private static boolean reflectionAvailable;
 
-    // Reflection handle for Matrix4fStack.current to save/restore stack depth
-    private static Field modelViewStackCurrentField;
-
-    private static void initReflection() {
+    private static synchronized void initReflection() {
         if (reflectionInitialized) return;
         reflectionInitialized = true;
         try {
             tooltipRendererClass = Class.forName("icyllis.modernui.mc.TooltipRenderer");
             uiManagerClass = Class.forName("icyllis.modernui.mc.UIManager");
-            guiRenderTypeClass = Class.forName("icyllis.modernui.mc.GuiRenderType");
+            muiModApiClass = Class.forName("icyllis.modernui.mc.MuiModApi");
 
-            sShadowRadiusField = tooltipRendererClass.getDeclaredField("sShadowRadius");
-            sShadowAlphaField = tooltipRendererClass.getDeclaredField("sShadowAlpha");
-            sFillColorField = tooltipRendererClass.getDeclaredField("sFillColor");
-            sCornerRadiusField = tooltipRendererClass.getDeclaredField("sCornerRadius");
-            sBorderWidthField = tooltipRendererClass.getDeclaredField("sBorderWidth");
-            sBorderColorCycleField = tooltipRendererClass.getDeclaredField("sBorderColorCycle");
-            hBorderField = tooltipRendererClass.getDeclaredField("H_BORDER");
-            vBorderField = tooltipRendererClass.getDeclaredField("V_BORDER");
+            mTooltipRendererField = uiManagerClass.getField("mTooltipRenderer");
+            sBorderColorCycleField = tooltipRendererClass.getField("sBorderColorCycle");
 
-            getShaderTooltipMethod = guiRenderTypeClass.getDeclaredMethod("getShaderTooltip");
-            tooltipRenderTypeMethod = guiRenderTypeClass.getDeclaredMethod("tooltip");
-            uiManagerGetInstanceMethod = uiManagerClass.getDeclaredMethod("getInstance");
-
-            // ModernUI's own drawRoundedBackground: (GuiGraphics, Matrix4f, float, float, int, int, boolean, int)
-            drawRoundedBgMethod = tooltipRendererClass.getDeclaredMethod(
+            uiManagerGetInstanceMethod = uiManagerClass.getMethod("getInstance");
+            computeWorkingColorMethod = tooltipRendererClass.getDeclaredMethod("computeWorkingColor", ItemStack.class);
+            computeWorkingColorMethod.setAccessible(true);
+            updateBorderColorMethod = tooltipRendererClass.getDeclaredMethod("updateBorderColor");
+            updateBorderColorMethod.setAccessible(true);
+            drawRoundedBackgroundMethod = tooltipRendererClass.getDeclaredMethod(
                     "drawRoundedBackground",
-                    net.minecraft.client.gui.GuiGraphics.class,
-                    org.joml.Matrix4f.class,
+                    GuiGraphics.class,
+                    Matrix3x2f.class,
+                    ScreenRectangle.class,
                     float.class, float.class, int.class, int.class,
                     boolean.class, int.class);
-            drawRoundedBgMethod.setAccessible(true);
+            drawRoundedBackgroundMethod.setAccessible(true);
 
-            // For saving/restoring ModelViewStack depth
-            modelViewStackCurrentField = Matrix4fStack.class.getDeclaredField("current");
-            modelViewStackCurrentField.setAccessible(true);
+            muiModApiGetMethod = muiModApiClass.getMethod("get");
+            peekScissorStackMethod = muiModApiClass.getMethod("peekScissorStack", GuiGraphics.class);
+
+            reflectionAvailable = true;
         } catch (Exception ignored) {
+            reflectionAvailable = false;
         }
     }
 
     /**
-     * Called via reflection from {@code MixinObscureTooltipRenderer}.
+     * Draws the ModernUI rounded background for an obscure-tooltips panel.
+     *
+     * @return {@code true} if ModernUI handled the draw; {@code false} if the
+     *         caller should fall back to obscure-tooltips' own panel.
      */
-    @SuppressWarnings("unchecked")
-    public static void drawRoundedBackground(
-            GuiGraphics gr, Matrix4f pose,
-            float x, float y, int contentWidth, int contentHeight,
-            TooltipState state) {
-
+    public static boolean drawRoundedBackground(GuiGraphics graphics,
+                                                float x, float y,
+                                                int contentWidth, int contentHeight,
+                                                TooltipState state) {
         initReflection();
-        if (tooltipRendererClass == null) {
-            return;
+        if (!reflectionAvailable) {
+            return false;
         }
-
         try {
-            // --- Get UIManager instance and its TooltipRenderer ---
             Object uiManager = uiManagerGetInstanceMethod.invoke(null);
-            Field trField = uiManagerClass.getDeclaredField("mTooltipRenderer");
-            trField.setAccessible(true);
-            Object tooltipRenderer = trField.get(uiManager);
+            if (uiManager == null) {
+                return false;
+            }
+            Object tooltipRenderer = mTooltipRendererField.get(uiManager);
             if (tooltipRenderer == null) {
-                return;
+                return false;
             }
 
-            // --- Call computeWorkingColor ---
-            Method computeWorkingColor = tooltipRendererClass.getDeclaredMethod("computeWorkingColor", net.minecraft.world.item.ItemStack.class);
-            computeWorkingColor.setAccessible(true);
-            computeWorkingColor.invoke(tooltipRenderer, state.stack);
-
-            // --- Call updateBorderColor if cycling ---
-            int borderColorCycle = sBorderColorCycleField.getInt(null);
-            Field useSpectrumField = tooltipRendererClass.getDeclaredField("mUseSpectrum");
-            useSpectrumField.setAccessible(true);
-            Field layoutRTLField = tooltipRendererClass.getDeclaredField("mLayoutRTL");
-            layoutRTLField.setAccessible(true);
-            Field currTimeMillisField = tooltipRendererClass.getDeclaredField("mCurrTimeMillis");
-            currTimeMillisField.setAccessible(true);
-
-            if (borderColorCycle > 0) {
-                Method updateBorderColor = tooltipRendererClass.getDeclaredMethod("updateBorderColor");
-                updateBorderColor.setAccessible(true);
-                updateBorderColor.invoke(tooltipRenderer);
+            computeWorkingColorMethod.invoke(tooltipRenderer, state.stack);
+            if (sBorderColorCycleField.getInt(null) > 0) {
+                updateBorderColorMethod.invoke(tooltipRenderer);
             }
 
-            // --- Read static config ---
-            float hBorder = hBorderField.getInt(null);
-            float vBorder = vBorderField.getInt(null);
-            float shadowRadius = Math.max(sShadowRadiusField.getFloat(null), 0.00001f);
-            float cornerRadius = sCornerRadiusField.getFloat(null);
-            float borderWidth = sBorderWidthField.getFloat(null);
-            float shadowAlpha = sShadowAlphaField.getFloat(null);
-            int[] fillColor = (int[]) sFillColorField.get(null);
+            Object modApi = muiModApiGetMethod.invoke(null);
+            // ModernUI accepts a null scissor (no active scissor rectangle), so
+            // pass whatever the scissor stack currently holds.
+            Object scissor = peekScissorStackMethod.invoke(modApi, graphics);
 
-            float tooltipWidth = contentWidth;
-            float tooltipHeight = contentHeight;
-            float halfWidth = tooltipWidth / 2f;
-            float halfHeight = tooltipHeight / 2f;
-            float centerX = x + halfWidth;
-            float centerY = y + halfHeight;
-            float sizeX = halfWidth + hBorder;
-            float sizeY = halfHeight + vBorder;
-
-            ShaderInstance shader = (ShaderInstance) getShaderTooltipMethod.invoke(null);
-            if (shader == null) {
-                return;
-            }
-
-            shader.safeGetUniform("u_PushData0")
-                    .set(sizeX, sizeY, cornerRadius, borderWidth / 2f);
-
-            boolean useSpectrum = useSpectrumField.getBoolean(tooltipRenderer);
-            boolean layoutRTL = layoutRTLField.getBoolean(tooltipRenderer);
-            long currTimeMillis = currTimeMillisField.getLong(tooltipRenderer);
-
-            float rainbowOffset = 0;
-            if (useSpectrum) {
-                rainbowOffset = 1;
-                if (borderColorCycle > 0) {
-                    long overallCycle = borderColorCycle * 4L;
-                    rainbowOffset += (float) (currTimeMillis % overallCycle) / overallCycle;
-                }
-                if (!layoutRTL) {
-                    rainbowOffset = -rainbowOffset;
-                }
-            }
-
-            shader.safeGetUniform("u_PushData1")
-                    .set(shadowAlpha, 1.25f / shadowRadius, (fillColor[0] >>> 24) / 255f, rainbowOffset);
-
-            if (rainbowOffset == 0) {
-                Method chooseBorderColor = tooltipRendererClass.getDeclaredMethod("chooseBorderColor", int.class);
-                chooseBorderColor.setAccessible(true);
-                setBorderColor(shader, "u_PushData2", (int) chooseBorderColor.invoke(tooltipRenderer, 0));
-                setBorderColor(shader, "u_PushData3", (int) chooseBorderColor.invoke(tooltipRenderer, 1));
-                setBorderColor(shader, "u_PushData4", (int) chooseBorderColor.invoke(tooltipRenderer, 3));
-                setBorderColor(shader, "u_PushData5", (int) chooseBorderColor.invoke(tooltipRenderer, 2));
-            }
-
-            // Save ModelViewStack depth to restore in case the method throws
-            // and leaves the stack unbalanced (which causes "max stack size of 16" crashes).
-            Matrix4fStack modelViewStack = RenderSystem.getModelViewStack();
-            int originalDepth = 0;
-            if (modelViewStackCurrentField != null) {
-                originalDepth = modelViewStackCurrentField.getInt(modelViewStack);
-            }
-
-            try {
-                // Delegate to ModernUI's own rendering method.
-                // It handles shader setup, blending, vertex format, and buffering correctly.
-                // Params: GuiGraphics, Matrix4f, x, y, width, height, useGradient, zLevel
-                drawRoundedBgMethod.invoke(tooltipRenderer,
-                        gr, pose, x, y, contentWidth, contentHeight, false, 0);
-            } finally {
-                // Restore ModelViewStack depth. ModernUI's method pushes/pops internally,
-                // and if it throws, the stack is left unbalanced. This ensures balance.
-                if (modelViewStackCurrentField != null) {
-                    int currentDepth = modelViewStackCurrentField.getInt(modelViewStack);
-                    int diff = currentDepth - originalDepth;
-                    if (diff > 0) {
-                        for (int i = 0; i < diff; i++) {
-                            modelViewStack.popMatrix();
-                        }
-                        RenderSystem.applyModelViewMatrix();
-                    }
-                }
-            }
-        } catch (Exception ignored) {
+            Matrix3x2f pose = new Matrix3x2f(graphics.pose());
+            drawRoundedBackgroundMethod.invoke(tooltipRenderer, graphics, pose, scissor,
+                    x, y, contentWidth, contentHeight, false, 0);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
-    }
-
-    private static void setBorderColor(ShaderInstance shader, String name, int argb) {
-        int a = (argb >>> 24);
-        int r = ((argb >> 16) & 0xff);
-        int g = ((argb >> 8) & 0xff);
-        int b = (argb & 0xff);
-        shader.safeGetUniform(name).set(r / 255f, g / 255f, b / 255f, a / 255f);
     }
 }

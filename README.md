@@ -7,13 +7,25 @@
 [![Available for NeoForge](https://img.shields.io/badge/Available%20for-NeoForge-f16436?logo=data:image/png;base64,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)](https://neoforged.net)
 
 
-A multi-loader (Fabric & NeoForge) mod hat bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
+A multi-loader (Fabric & NeoForge) mod that bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
 
 The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) and [Fragmentum](https://modrinth.com/mod/fragmentum), and recommends [ModernUI](https://modrinth.com/mod/modern-ui).
 
 ![preview](/images/preview.png)
 
 </center></div>
+
+## Status
+
+- **Fabric** — stable.
+- **NeoForge** — **alpha**, with known issues listed below.
+
+## Known Issues
+
+### NeoForge
+
+- **The client hangs at the loading screen on macOS.** The ModernUI fork ([Tealeste/ModernUI-MC-mVUS](https://github.com/Tealeste/ModernUI-MC-mVUS)) initializes AWT/AppKit from NeoForge's mod-loading worker thread, which deadlocks on macOS. Launch the game with `-Djava.awt.headless=true` as a workaround. This is an upstream fork issue, not a bug in this mod.
+- **The built-in `vibrant_tooltips` resource pack does not load.** Fragmentum resolves the pack root through `FileSystems.getFileSystem(jar:...)`, which is not open on NeoForge, and NeoForge then rejects the pack's `pack.mcmeta` format (`min_format: 65` without `supported_formats`). Tooltips fall back to the default style. This is an upstream obscure-tooltips / Fragmentum issue.
 
 ## Features
 
@@ -24,17 +36,17 @@ The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) a
 
 ## Building from Source
 
-Requires JDK 21 (Gradle 8.10 does not support newer JDKs).
+Requires JDK 21.
 
 ```bash
 git clone https://github.com/PageQwQ/ModernObscure.git
 cd ModernObscure
 
 # Place required dependencies in libs/ directory:
-# - obscure_tooltips-fabric-1.21.1-4.2.2.jar
-# - fragmentum-fabric-1.21.1-2.1.0.jar
-# - obscure_tooltips-neoforge-1.21.1-4.2.2.jar
-# - fragmentum-neoforge-1.21.1-2.1.0.jar
+# - obscure_tooltips-fabric-1.21.11-5.0.0.jar
+# - fragmentum-fabric-1.21.11-3.1.3.jar
+# - obscure_tooltips-neoforge-1.21.11-5.0.0.jar
+# - fragmentum-neoforge-1.21.11-3.1.3.jar
 
 JAVA_HOME=/path/to/jdk-21 ./gradlew build
 ```
@@ -47,9 +59,7 @@ Built JARs:
 
 - Multi-loader project using Architectury Loom: shared code lives in `common/`, with per-loader `fabric/` and `neoforge/` modules for loader-specific metadata
 - All ModernUI access is through Java reflection, so there is no compile-time dependency on ModernUI
-- ThreadLocal guards prevent double-rendering when both mods try to render the same tooltip
-- The SDF background uses `GL_ALWAYS` depth function to prevent AppleSkin bars from being rejected by the depth buffer
-- AppleSkin bars are re-rendered after the SDF flush with clean GL state; `setAccessible(true)` is needed because NeoForge's `FoodTooltipRenderer` is package-private
-- `MixinHeaderComponent` is split per loader because the Fabric jar of obscure-tooltips names the slot-drawing method `method_32666` (intermediary) while the NeoForge jar names it `renderImage` (Mojang)
-- Only the Fabric mixin config carries a refmap (`modernobscure-compat-common-common-refmap.json`); NeoForge resolves Mojang-mapped names at runtime
-- ModelViewStack depth is tracked and restored to prevent crashes from unbalanced push/pop in ModernUI's internal methods
+- On 1.21.11 ModernUI renders its rounded SDF background through the deferred GUI render-state system; the compat primes ModernUI's working color / border animation and calls its private `drawRoundedBackground(GuiGraphics, Matrix3x2f, ScreenRectangle, ...)` with the current pose and scissor rectangle
+- `MixinGuiGraphics` hides ModernUI's tooltip option (`TooltipRenderer.sTooltip`) at priority 0, so ModernUI's handler falls through and obscure-tooltips' own handler renders the tooltip
+- NeoForge patches an extra `ItemStack` parameter onto `GuiGraphics.renderTooltip`, so the matching guard lives in the NeoForge-only `MixinGuiGraphicsNeoForge`
+- Shared code is compiled into each loader source set (not just bundled into the jar) so the classes are owned by the mod classloader on NeoForge
