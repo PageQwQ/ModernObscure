@@ -38,6 +38,8 @@ public final class ModernUIBackgroundRenderer {
 
     private static Field mTooltipRendererField;
     private static Field sBorderColorCycleField;
+    private static Field sShadowRadiusField;
+    private static Field sShadowAlphaField;
 
     private static Method uiManagerGetInstanceMethod;
     private static Method computeWorkingColorMethod;
@@ -59,6 +61,8 @@ public final class ModernUIBackgroundRenderer {
 
             mTooltipRendererField = uiManagerClass.getField("mTooltipRenderer");
             sBorderColorCycleField = tooltipRendererClass.getField("sBorderColorCycle");
+            sShadowRadiusField = tooltipRendererClass.getField("sShadowRadius");
+            sShadowAlphaField = tooltipRendererClass.getField("sShadowAlpha");
 
             uiManagerGetInstanceMethod = uiManagerClass.getMethod("getInstance");
             computeWorkingColorMethod = tooltipRendererClass.getDeclaredMethod("computeWorkingColor", ItemStack.class);
@@ -118,8 +122,25 @@ public final class ModernUIBackgroundRenderer {
             Object scissor = peekScissorStackMethod.invoke(modApi, graphics);
 
             Matrix3x2f pose = new Matrix3x2f(graphics.pose());
-            drawRoundedBackgroundMethod.invoke(tooltipRenderer, graphics, pose, scissor,
-                    x, y, contentWidth, contentHeight, false, 0);
+            // ModernUI draws the drop shadow as part of the same SDF quad as the
+            // background, inflated by shadowRadius * 1.2. That translucent shadow
+            // writes depth over a rectangle larger than the tooltip, so anything
+            // drawn afterwards inside it (JEI overlays, Create's creative-tab
+            // banner, ...) fails the depth test and vanishes. Disabling the
+            // shadow shrinks the quad down to the tooltip border and the shadow
+            // fragments discard, so nothing outside the panel writes depth.
+            // Scoped to this one draw, then the user's ModernUI settings return.
+            float oldShadowRadius = sShadowRadiusField.getFloat(null);
+            float oldShadowAlpha = sShadowAlphaField.getFloat(null);
+            try {
+                sShadowRadiusField.setFloat(null, 0.0f);
+                sShadowAlphaField.setFloat(null, 0.0f);
+                drawRoundedBackgroundMethod.invoke(tooltipRenderer, graphics, pose, scissor,
+                        x, y, contentWidth, contentHeight, false, 0);
+            } finally {
+                sShadowRadiusField.setFloat(null, oldShadowRadius);
+                sShadowAlphaField.setFloat(null, oldShadowAlpha);
+            }
             return true;
         } catch (Exception e) {
             return false;
