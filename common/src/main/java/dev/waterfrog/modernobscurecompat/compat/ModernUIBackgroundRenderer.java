@@ -190,8 +190,27 @@ public final class ModernUIBackgroundRenderer {
                 // Delegate to ModernUI's own rendering method.
                 // It handles shader setup, blending, vertex format, and buffering correctly.
                 // Params: GuiGraphics, Matrix4f, x, y, width, height, useGradient, zLevel
-                drawRoundedBgMethod.invoke(tooltipRenderer,
-                        gr, pose, x, y, contentWidth, contentHeight, false, 0);
+                //
+                // ModernUI draws the drop shadow as part of the same SDF quad as
+                // the background, inflated by shadowRadius * 1.2. That translucent
+                // shadow writes depth over a rectangle larger than the tooltip, so
+                // anything drawn afterwards inside it (JEI overlays, Create's
+                // creative-tab banner, HUD banners, ...) fails the depth test and
+                // vanishes. Disabling the shadow shrinks the quad down to the
+                // tooltip border and the shadow fragments discard, so nothing
+                // outside the panel writes depth. Scoped to this one draw, then the
+                // user's ModernUI settings return.
+                float oldShadowRadius = sShadowRadiusField.getFloat(null);
+                float oldShadowAlpha = sShadowAlphaField.getFloat(null);
+                try {
+                    sShadowRadiusField.setFloat(null, 0.0f);
+                    sShadowAlphaField.setFloat(null, 0.0f);
+                    drawRoundedBgMethod.invoke(tooltipRenderer,
+                            gr, pose, x, y, contentWidth, contentHeight, false, 0);
+                } finally {
+                    sShadowRadiusField.setFloat(null, oldShadowRadius);
+                    sShadowAlphaField.setFloat(null, oldShadowAlpha);
+                }
             } finally {
                 // Restore ModelViewStack depth. ModernUI's method pushes/pops internally,
                 // and if it throws, the stack is left unbalanced. This ensures balance.
