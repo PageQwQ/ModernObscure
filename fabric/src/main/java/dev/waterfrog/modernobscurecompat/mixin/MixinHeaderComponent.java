@@ -31,9 +31,9 @@ public abstract class MixinHeaderComponent {
         return modernUIAvailable;
     }
 
-    // Fabric jar of obscure-tooltips names this method_32666 (intermediary),
-    // NeoForge jar names it renderImage (Mojang). Regex matches either.
-    @Inject(method = "method_32666", at = @At("HEAD"), remap = false)
+    // Official (Mojang) name; Loom remaps it to the Fabric intermediary
+    // (method_32666) for production. The NeoForge mixin uses the same name.
+    @Inject(method = "renderImage", at = @At("HEAD"))
     private void beforeRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
         // obscure's own style.slot() renders the slot background; only reset
@@ -44,7 +44,7 @@ public abstract class MixinHeaderComponent {
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
-    @Inject(method = "method_32666", at = @At("RETURN"), remap = false)
+    @Inject(method = "renderImage", at = @At("RETURN"))
     private void afterRenderImage(Font font, int x, int y, GuiGraphics graphics, CallbackInfo ci) {
         if (!isModernUIAvailable()) return;
         // Reset shader color to white after icon rendering.

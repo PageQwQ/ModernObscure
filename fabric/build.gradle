@@ -10,9 +10,15 @@ dependencies {
     modCompileOnly files(rootProject.file("libs/fragmentum-fabric-${rootProject.fragmentum_version}.jar"))
 }
 
-jar {
-    // Bundle all compiled classes + resources from common into the final jar
-    from project(':common').sourceSets.main.output
+// Shared code lives in :common. It is compiled as part of this source set (not
+// just bundled into the jar) so the classes are owned by the mod classloader on
+// every loader -- NeoForge's TRANSFORMER loader rejects classes that resolve
+// Minecraft through the app classloader. This also makes runClient work.
+sourceSets {
+    main {
+        java.srcDir project(':common').sourceSets.main.java
+        resources.srcDir project(':common').sourceSets.main.resources
+    }
 }
 
 processResources {

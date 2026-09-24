@@ -10,9 +10,24 @@ dependencies {
     modCompileOnly files(rootProject.file("libs/fragmentum-neoforge-${rootProject.fragmentum_version}.jar"))
 }
 
-jar {
-    // Bundle all compiled classes + resources from common into the final jar
-    from project(':common').sourceSets.main.output
+// Shared code lives in :common. It is compiled as part of this source set (not
+// just bundled into the jar) so the classes are owned by the mod classloader on
+// every loader -- NeoForge's TRANSFORMER loader rejects classes that resolve
+// Minecraft through the app classloader. This also makes runClient work.
+sourceSets {
+    main {
+        java.srcDir project(':common').sourceSets.main.java
+        resources.srcDir project(':common').sourceSets.main.resources
+    }
+}
+
+// Architectury Loom 1.17 puts the FancyModLoader `loader` jar on both the JVM
+// classpath and FML's legacyClassPath, which makes the dev launch fail with
+// "Module fml_loader reads another module named fml_loader". The loader is
+// still provided through legacyClassPath, so dropping it from the run
+// classpath restores NeoForge dev runs without affecting the built jar.
+configurations.matching { it.name == 'runtimeClasspath' }.configureEach {
+    exclude module: 'loader'
 }
 
 processResources {

@@ -31,6 +31,13 @@ ordering = "NONE"
 side = "CLIENT"
 
 [[dependencies.modernobscurecompat]]
+modId = "fragmentum"
+type = "required"
+versionRange = "[5.0.0,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.modernobscurecompat]]
 modId = "modernui"
 type = "optional"
 versionRange = "*"

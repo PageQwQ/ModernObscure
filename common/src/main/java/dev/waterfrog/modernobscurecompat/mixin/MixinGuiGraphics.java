@@ -34,9 +34,15 @@ public abstract class MixinGuiGraphics {
     @Unique
     private static Method obscureRenderMethod;
     @Unique
-    private static Method clientGroupTooltipFindFirst;
-    @Unique
     private static Class<?> stackBufferClass;
+    @Unique
+    private static Class<?> compositeClientComponentClass;
+    @Unique
+    private static Method compositeClientGetComponents;
+    @Unique
+    private static Class<?> compositeTooltipComponentClass;
+    @Unique
+    private static Method compositeTooltipGetComponents;
     @Unique
     private static boolean reflectionInitAttempted;
 
@@ -52,26 +58,52 @@ public abstract class MixinGuiGraphics {
         } catch (Exception ignored) {
         }
         try {
-            Class<?> clazz = Class.forName("dev.obscuria.fragmentum.client.ClientGroupTooltip");
-            clientGroupTooltipFindFirst = clazz.getMethod("findFirst", List.class, Class.class);
             stackBufferClass = Class.forName("dev.obscuria.tooltips.client.component.StackBuffer");
+        } catch (Exception ignored) {
+        }
+        // Fragmentum 5.0.0 replaced ClientGroupTooltip with the Composite* interfaces.
+        try {
+            compositeClientComponentClass = Class.forName("dev.obscuria.fragmentum.api.client.CompositeClientTooltipComponent");
+            compositeClientGetComponents = compositeClientComponentClass.getMethod("getComponents");
+        } catch (Exception ignored) {
+        }
+        try {
+            compositeTooltipComponentClass = Class.forName("dev.obscuria.fragmentum.api.common.tooltip.CompositeTooltipComponent");
+            compositeTooltipGetComponents = compositeTooltipComponentClass.getMethod("getComponents");
         } catch (Exception ignored) {
         }
     }
 
     /**
      * Same check obscure-tooltips uses internally: whether the component list
-     * carries a StackBuffer (item tooltips).
+     * carries a StackBuffer (item tooltips), unwrapping a fragmentum composite.
      */
     @Unique
     private static boolean hasStackBuffer(List<ClientTooltipComponent> components) {
         initReflection();
-        if (clientGroupTooltipFindFirst == null || stackBufferClass == null) return false;
-        try {
-            return clientGroupTooltipFindFirst.invoke(null, components, stackBufferClass) != null;
-        } catch (Exception e) {
-            return false;
+        if (stackBufferClass == null) return false;
+        for (Object component : components) {
+            if (stackBufferClass.isInstance(component)) return true;
+            if (compositeClientComponentClass != null
+                    && compositeClientComponentClass.isInstance(component)
+                    && hasStackBufferInCollection(component, compositeClientGetComponents)) {
+                return true;
+            }
         }
+        return false;
+    }
+
+    @Unique
+    private static boolean hasStackBufferInCollection(Object composite, Method getComponents) {
+        if (getComponents == null) return false;
+        try {
+            List<?> inner = (List<?>) getComponents.invoke(composite);
+            for (Object component : inner) {
+                if (stackBufferClass.isInstance(component)) return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
     }
 
     @Unique
@@ -109,17 +141,10 @@ public abstract class MixinGuiGraphics {
         initReflection();
         if (stackBufferClass == null) return false;
         if (stackBufferClass.isInstance(tooltipComponent)) return true;
-        try {
-            // dev.obscuria.fragmentum.content.world.tooltip.GroupTooltip
-            if (tooltipComponent.getClass().getName()
-                    .equals("dev.obscuria.fragmentum.content.world.tooltip.GroupTooltip")) {
-                Method components = tooltipComponent.getClass().getMethod("components");
-                List<?> list = (List<?>) components.invoke(tooltipComponent);
-                for (Object component : list) {
-                    if (stackBufferClass.isInstance(component)) return true;
-                }
-            }
-        } catch (Exception ignored) {
+        // dev.obscuria.fragmentum.api.common.tooltip.CompositeTooltipComponent
+        if (compositeTooltipComponentClass != null
+                && compositeTooltipComponentClass.isInstance(tooltipComponent)) {
+            return hasStackBufferInCollection(tooltipComponent, compositeTooltipGetComponents);
         }
         return false;
     }

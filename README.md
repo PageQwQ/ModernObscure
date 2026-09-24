@@ -24,17 +24,17 @@ The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) a
 
 ## Building from Source
 
-Requires JDK 21 (Gradle 8.10 does not support newer JDKs).
+Requires JDK 21.
 
 ```bash
 git clone https://github.com/PageQwQ/ModernObscure.git
 cd ModernObscure
 
 # Place required dependencies in libs/ directory:
-# - obscure_tooltips-fabric-1.21.1-4.2.2.jar
-# - fragmentum-fabric-1.21.1-2.1.0.jar
-# - obscure_tooltips-neoforge-1.21.1-4.2.2.jar
-# - fragmentum-neoforge-1.21.1-2.1.0.jar
+# - obscure_tooltips-fabric-1.21.1-4.2.5.jar
+# - fragmentum-fabric-1.21.1-5.0.0.jar
+# - obscure_tooltips-neoforge-1.21.1-4.2.5.jar
+# - fragmentum-neoforge-1.21.1-5.0.0.jar
 
 JAVA_HOME=/path/to/jdk-21 ./gradlew build
 ```
@@ -51,5 +51,6 @@ Built JARs:
 - The SDF background uses `GL_ALWAYS` depth function to prevent AppleSkin bars from being rejected by the depth buffer
 - AppleSkin bars are re-rendered after the SDF flush with clean GL state; `setAccessible(true)` is needed because NeoForge's `FoodTooltipRenderer` is package-private
 - `MixinHeaderComponent` is split per loader because the Fabric jar of obscure-tooltips names the slot-drawing method `method_32666` (intermediary) while the NeoForge jar names it `renderImage` (Mojang)
-- Only the Fabric mixin config carries a refmap (`modernobscure-compat-common-common-refmap.json`); NeoForge resolves Mojang-mapped names at runtime
+- Fragmentum 5.0.0 rewrote the Obscuria config API in Kotlin (`ConfigBuilder` moved to `dev.obscuria.fragmentum.api.config`, `ConfigValue` became `Configurable`, `defineBoolean` became `defineBool`); `MixinClientConfig` follows the new API
+- Fabric now needs [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) at runtime because Fragmentum 5.0.0 is written in Kotlin
 - ModelViewStack depth is tracked and restored to prevent crashes from unbalanced push/pop in ModernUI's internal methods
