@@ -12,6 +12,15 @@ dependencies {
     modCompileOnly files(rootProject.file("libs/fragmentum-forge-${rootProject.fragmentum_version}.jar"))
 }
 
+// Architectury Loom 1.17 puts the FML `fmlloader` jar on both the JVM classpath
+// and FML's legacyClassPath, which makes the dev launch fail with
+// "Module fmlloader reads another module named fmlloader". The loader is still
+// provided through legacyClassPath, so dropping it from the run classpath
+// restores Forge dev runs without affecting the built jar.
+configurations.matching { it.name == 'runtimeClasspath' }.configureEach {
+    exclude module: 'fmlloader'
+}
+
 jar {
     // Bundle all compiled classes + resources from common into the final jar
     from project(':common').sourceSets.main.output

@@ -24,22 +24,22 @@ The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) a
 
 ## Building from Source
 
-Requires JDK 17 and the 1.20.1 dependency jars in `libs/` (already included in this repository):
+Requires JDK 21 to run the build (the mod itself is compiled with the Java 17 toolchain) and the 1.20.1 dependency jars in `libs/` (already included in this repository):
 
-- `obscure_tooltips-fabric-1.20.1-3.10.0.jar`, `fragmentum-fabric-1.20.1-1.5.2.jar`
-- `obscure_tooltips-forge-1.20.1-3.10.0.jar`, `fragmentum-forge-1.20.1-1.5.2.jar`
+- `obscure_tooltips-fabric-1.20.1-3.10.1.jar`, `fragmentum-fabric-1.20.1-5.0.0.jar`
+- `obscure_tooltips-forge-1.20.1-3.10.1.jar`, `fragmentum-forge-1.20.1-5.0.0.jar`
 
 ```bash
 git clone https://github.com/PageQwQ/ModernObscure.git
 cd ModernObscure
 git checkout 1.20.1
-JAVA_HOME=/path/to/jdk-17 ./gradlew build
+JAVA_HOME=/path/to/jdk-21 ./gradlew build
 ```
 
 Built JARs:
 
-- `fabric/build/libs/modernobscure-compat-fabric-1.3.0.jar`
-- `forge/build/libs/modernobscure-compat-forge-1.3.0.jar`
+- `fabric/build/libs/modernobscure-compat-fabric-*.jar`
+- `forge/build/libs/modernobscure-compat-forge-*.jar`
 
 ## Technical Notes
 
@@ -48,6 +48,8 @@ Built JARs:
 - ThreadLocal guards prevent double-rendering when both mods try to render the same tooltip
 - The SDF background uses `GL_ALWAYS` depth function to prevent AppleSkin bars from being rejected by the depth buffer
 - AppleSkin bars are re-rendered after the SDF flush with clean GL state; reflection is used because AppleSkin's `FoodTooltipRenderer` is package-private and its method name differs between loaders
-- `MixinHeaderComponent` is split per loader because the Fabric jar of obscure-tooltips names the slot-drawing method `method_32666` (intermediary) while the Forge jar uses the SRG name `m_183452_`
+- `MixinHeaderComponent` targets the official `renderImage` name; Loom remaps it to Fabric intermediary (`method_32666`) or Forge SRG (`m_183452_`) as needed
+- Fragmentum 5.0.0 rewrote the Obscuria codebase in Kotlin and moved `ARGB` to `dev.obscuria.fragmentum.api.common.color`; `MixinAbstractHeaderLayout` follows the new package
+- Fabric now needs [Fabric Language Kotlin](https://modrinth.com/mod/fabric-language-kotlin) at runtime because Fragmentum 5.0.0 is written in Kotlin
 - Forge 1.20.1 registers mixin configs via the jar manifest `MixinConfigs` attribute (the `mods.toml` `[[mixins]]` section is not parsed); the Forge jar also ships a `pack.mcmeta` because Forge silently drops mod packs that lack one
 - The `ModelViewStack` depth is tracked and restored to prevent crashes from unbalanced push/pop in ModernUI's internal methods

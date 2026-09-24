@@ -81,20 +81,18 @@ public abstract class MixinGuiGraphics {
         }
     }
 
-    // Fabric runtime is intermediary; GuiGraphics.renderTooltipInternal is
-    // method_51435 there. remap=false: this file is platform-specific and
-    // the name is already the runtime one (fabric-refmap is NOT referenced
-    // by the mixin config).
-    // ModernUI's own HEAD handler on renderTooltipInternal draws & cancels
-    // before our cancellable handler runs (same-point mixin ordering can't be
-    // relied upon across mods). Disable ModernUI at the top-level tooltip entry
-    // points instead, so its internal HEAD sees sTooltip=false and skips.
-    @Inject(method = "method_51446", at = @At("HEAD"), remap = false)
+    // Official (Mojang) names; Loom remaps them to the Fabric intermediary
+    // namespace for production. ModernUI's own HEAD handler on
+    // renderTooltipInternal draws & cancels before our cancellable handler runs
+    // (same-point mixin ordering can't be relied upon across mods). Disable
+    // ModernUI at the top-level tooltip entry points instead, so its internal
+    // HEAD sees sTooltip=false and skips.
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V", at = @At("HEAD"))
     private void preRenderTooltipStack(Font font, net.minecraft.world.item.ItemStack stack, int x, int y, CallbackInfo ci) {
         disableModernUITooltip();
     }
 
-    @Inject(method = "method_51437", at = @At("HEAD"), remap = false)
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;II)V", at = @At("HEAD"))
     private void preRenderTooltipList(Font font, java.util.List<? extends net.minecraft.network.chat.Component> lines,
                                       java.util.Optional<net.minecraft.world.inventory.tooltip.TooltipComponent> tooltip,
                                       int x, int y, CallbackInfo ci) {
@@ -105,14 +103,14 @@ public abstract class MixinGuiGraphics {
     // injection point, so this reliably disables ModernUI's own tooltip takeover
     // (sTooltip) before ModernUI's HEAD handler can draw & cancel. This solves
     // the priority race where ModernUI's mixin (priority=1) wins over ours.
-    @Inject(method = "method_51435", at = @At("HEAD"), remap = false)
+    @Inject(method = "renderTooltipInternal", at = @At("HEAD"))
     private void preRenderTooltipInternal(Font font, List<ClientTooltipComponent> components,
                                           int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                           CallbackInfo ci) {
         disableModernUITooltip();
     }
 
-    @Inject(method = "method_51435", at = @At("HEAD"), cancellable = true, remap = false)
+    @Inject(method = "renderTooltipInternal", at = @At("HEAD"), cancellable = true)
     private void beforeTooltipRender(Font font, List<ClientTooltipComponent> components,
                                       int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                       CallbackInfo ci) {
@@ -145,7 +143,7 @@ public abstract class MixinGuiGraphics {
         }
     }
 
-    @Inject(method = "method_51435", at = @At("TAIL"), remap = false)
+    @Inject(method = "renderTooltipInternal", at = @At("TAIL"))
     private void afterTooltipRender(Font font, List<ClientTooltipComponent> components,
                                      int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                      CallbackInfo ci) {

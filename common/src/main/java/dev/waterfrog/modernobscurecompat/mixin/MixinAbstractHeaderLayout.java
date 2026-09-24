@@ -1,6 +1,6 @@
 package dev.waterfrog.modernobscurecompat.mixin;
 
-import dev.obscuria.fragmentum.util.color.ARGB;
+import dev.obscuria.fragmentum.api.common.color.ARGB;
 import dev.obscuria.tooltips.client.TooltipState;
 import dev.obscuria.tooltips.client.tooltip.layout.AbstractHeaderLayout;
 import org.spongepowered.asm.mixin.Mixin;
