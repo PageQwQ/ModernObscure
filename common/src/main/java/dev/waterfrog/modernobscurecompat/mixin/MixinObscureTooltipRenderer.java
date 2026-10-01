@@ -5,6 +5,7 @@ import dev.obscuria.tooltips.client.TooltipState;
 import dev.waterfrog.modernobscurecompat.compat.ModernUIBackgroundRenderer;
 import dev.waterfrog.modernobscurecompat.compat.ModernUIRoundedEffects;
 import dev.waterfrog.modernobscurecompat.compat.ModernUITooltipGuard;
+import dev.waterfrog.modernobscurecompat.compat.TooltipTransition;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -76,6 +77,51 @@ public abstract class MixinObscureTooltipRenderer {
             state.renderFrame(graphics, pos, width, height);
         }
         // ModernUI: SKIP — the SDF background already draws the frame/border.
+    }
+
+    @Redirect(method = "render", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/screens/inventory/tooltip/ClientTooltipPositioner;positionTooltip(IIIIII)Lorg/joml/Vector2ic;"))
+    private static Vector2ic glidePositionTooltip(ClientTooltipPositioner positioner,
+                                                  int screenWidth, int screenHeight,
+                                                  int mouseX, int mouseY,
+                                                  int tooltipWidth, int tooltipHeight) {
+        Vector2ic target = positioner.positionTooltip(
+                screenWidth, screenHeight, mouseX, mouseY, tooltipWidth, tooltipHeight);
+        return TooltipTransition.animate(target.x(), target.y(), tooltipWidth, tooltipHeight);
+    }
+
+    /**
+     * Applies the size transition (pop-in / resize) to the whole tooltip.
+     *
+     * <p>Injected right after obscure-tooltips pushes its outer frame matrix, so
+     * the scale lands in the base matrix and covers the ModernUI SDF background,
+     * the frame, effects and every content component alike. In 1.21.11
+     * {@code GuiGraphics.pose()} is a JOML {@code Matrix3x2fStack}, and the
+     * content is drawn through {@code graphics.pose()} as well, so everything
+     * scales together. obscure-tooltips pops that same matrix at the end of
+     * {@code render()}, so the transform is removed automatically.
+     */
+    @Inject(method = "render", at = @At(value = "INVOKE",
+            target = "Lorg/joml/Matrix3x2fStack;pushMatrix()Lorg/joml/Matrix3x2fStack;",
+            ordinal = 0, shift = At.Shift.AFTER, remap = false), require = 0)
+    private static void scaleContentOnFramePose(GuiGraphics graphics, Font font,
+                                                List<ClientTooltipComponent> components,
+                                                int mouseX, int mouseY,
+                                                ClientTooltipPositioner positioner,
+                                                CallbackInfoReturnable<Boolean> cir) {
+        applySizeTransition(graphics, mouseX, mouseY);
+    }
+
+    @Unique
+    private static void applySizeTransition(GuiGraphics graphics, int mouseX, int mouseY) {
+        float sx = TooltipTransition.getScaleX();
+        float sy = TooltipTransition.getScaleY();
+        if (sx == 1.0f && sy == 1.0f) {
+            return;
+        }
+        graphics.pose().translate(mouseX, mouseY);
+        graphics.pose().scale(sx, sy);
+        graphics.pose().translate(-mouseX, -mouseY);
     }
 
     @Inject(method = "render", at = @At("RETURN"))

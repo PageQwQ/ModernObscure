@@ -9,7 +9,11 @@
   "license": "Apache-2.0",
   "icon": "assets/modernobscurecompat/icon.png",
   "environment": "client",
-  "entrypoints": {},
+  "entrypoints": {
+    "modmenu": [
+      "dev.waterfrog.modernobscurecompat.fabric.ModMenuIntegration"
+    ]
+  },
   "mixins": [
     "modernobscurecompat.mixins.json"
   ],
@@ -21,5 +25,9 @@
   },
   "recommends": {
     "modernui": "*"
+  },
+  "suggests": {
+    "cloth-config": "*",
+    "modmenu": "*"
   }
 }
