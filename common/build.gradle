@@ -10,4 +10,8 @@ dependencies {
     // Fabric variant jars contain identical bytecode for the shared API classes.
     modCompileOnly files(rootProject.file("libs/obscure_tooltips-fabric-${rootProject.obscure_tooltips_version}.jar"))
     modCompileOnly files(rootProject.file("libs/fragmentum-fabric-${rootProject.fragmentum_version}.jar"))
+
+    // Cloth Config API -- compile-time only (optional at runtime). The API
+    // classes are shared across loaders, so any loader's artifact works here.
+    modCompileOnly "me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}"
 }

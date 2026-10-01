@@ -9,18 +9,27 @@
   "license": "Apache-2.0",
   "icon": "assets/modernobscurecompat/icon.png",
   "environment": "client",
-  "entrypoints": {},
+  "entrypoints": {
+    "modmenu": [
+      "dev.waterfrog.modernobscurecompat.fabric.ModMenuIntegration"
+    ],
+    "client": []
+  },
   "mixins": [
     "modernobscurecompat.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.19.2",
     "minecraft": "~1.21.1",
-    "java": ">=21",
-    "fragmentum": ">=5.0.0",
-    "obscure_tooltips": "*"
+    "java": ">=21"
   },
   "recommends": {
+    "fragmentum": ">=5.0.0",
+    "obscure_tooltips": "*",
     "modernui": "*"
+  },
+  "suggests": {
+    "cloth-config": "*",
+    "modmenu": "*"
   }
 }

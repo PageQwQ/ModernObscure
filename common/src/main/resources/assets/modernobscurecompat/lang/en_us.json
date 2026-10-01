@@ -1,0 +1,18 @@
+{
+  "modernobscurecompat.config.title": "Modern Obscure Config",
+  "modernobscurecompat.config.category.general": "Tooltip Transition",
+  "modernobscurecompat.config.enabled": "Enable transition",
+  "modernobscurecompat.config.enabled.tooltip": "Master switch for the smooth tooltip transition.",
+  "modernobscurecompat.config.smoothMovement": "Smooth movement",
+  "modernobscurecompat.config.smoothMovement.tooltip": "Let the tooltip glide toward the cursor instead of snapping to it.",
+  "modernobscurecompat.config.movementSpeed": "Movement speed",
+  "modernobscurecompat.config.movementSpeed.tooltip": "How quickly the tooltip catches up with the cursor. Higher is snappier, lower is floatier.",
+  "modernobscurecompat.config.snapDistance": "Snap distance",
+  "modernobscurecompat.config.snapDistance.tooltip": "Jump distances above this many pixels snap instantly (avoids sliding across the cursor on side flips).",
+  "modernobscurecompat.config.smoothSize": "Smooth size",
+  "modernobscurecompat.config.smoothSize.tooltip": "Animate the tooltip size when it appears or when its content changes.",
+  "modernobscurecompat.config.sizeSpeed": "Size speed",
+  "modernobscurecompat.config.sizeSpeed.tooltip": "How quickly the tooltip reaches its target size.",
+  "modernobscurecompat.config.startScale": "Start scale",
+  "modernobscurecompat.config.startScale.tooltip": "Scale the tooltip starts from when it appears (1.0 = no pop-in)."
+}
