@@ -11,13 +11,15 @@ A multi-loader (Fabric & NeoForge) mod hat bridges ModernUI's rounded SDF toolti
 
 The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) and [Fragmentum](https://modrinth.com/mod/fragmentum), and recommends [ModernUI](https://modrinth.com/mod/modern-ui).
 
-![preview](/images/preview.png)
+![preview](images/preview.png)
 
 </center></div>
 
 ## Features
 
+- **Smooth Tooltip Transitions** — The tooltip glides toward the cursor instead of snapping to it and animates its size on appearance or content changes. Speed, snap distance and start scale are configurable from the mod config screen (Cloth Config / Mod Menu on Fabric, the built-in config screen on NeoForge).
 - **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support.
+- **Rounded Rarity Glow** — obscure-tooltips' `rim_light` and `shimmer` back effects are hardcoded rectangles, so their glow keeps square corners and pokes past ModernUI's rounded border. Both are redrawn along a rounded outline whose radius is read from ModernUI's own `sCornerRadius`, so the rarity glow hugs the rounded panel at any radius setting.
 - **Obscure-tooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips.
 - **AppleSkin Compatible** — Hunger/saturation bars keep rendering correctly on top of the rounded background.
 - **Graceful Fallback** — When ModernUI is not installed, tooltips fall back to obscure-tooltips' default rendering.
@@ -47,6 +49,9 @@ Built JARs:
 
 - Multi-loader project using Architectury Loom: shared code lives in `common/`, with per-loader `fabric/` and `neoforge/` modules for loader-specific metadata
 - All ModernUI access is through Java reflection, so there is no compile-time dependency on ModernUI
+- `ModernUIRoundedEffects` replays `RimLightEffect` / `ShimmerEffect` verbatim (same palettes, easing, vertex colours and `RenderType.guiOverlay()` state) but walks a rounded perimeter instead of a rectangle; unknown effects fall through to obscure-tooltips' own draw, so no resource pack or obscure-tooltips change is needed
+- The glow band starts at ModernUI's border *inner* edge (`H_BORDER - sBorderWidth / 2`, with a matching corner radius), not at obscure-tooltips' 3 px: ModernUI centres its border stroke on the panel outline, so using 3 px leaves a strip of dark panel fill that reads as a black hairline between the border and the glow
+- Glow quads must keep obscure-tooltips' winding: `RenderType.guiOverlay()` carries no cull-state shard, so the GL cull state left over from the previous GUI draw still applies and a mirrored quad is silently back-face culled
 - ThreadLocal guards prevent double-rendering when both mods try to render the same tooltip
 - The SDF background uses `GL_ALWAYS` depth function to prevent AppleSkin bars from being rejected by the depth buffer
 - AppleSkin bars are re-rendered after the SDF flush with clean GL state; `setAccessible(true)` is needed because NeoForge's `FoodTooltipRenderer` is package-private

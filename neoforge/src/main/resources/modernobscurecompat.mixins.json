@@ -11,7 +11,8 @@
     "MixinHeaderComponent",
     "MixinObscureTooltipRenderer",
     "MixinRenderSystem",
-    "MixinTooltipRenderer"
+    "MixinTooltipRenderer",
+    "MixinTooltipState"
   ],
   "injectors": {
     "defaultRequire": 1
