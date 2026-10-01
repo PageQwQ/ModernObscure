@@ -51,10 +51,15 @@ public final class ModernUIRoundedEffects {
     private static final float PANEL_INSET = 4.0F;
 
     /**
-     * obscure-tooltips draws every back effect at the layout box inflated by this
-     * many pixels, i.e. 1 px inside ModernUI's panel outline.
+     * obscure-tooltips draws every back effect at the layout box inflated by 3 px,
+     * which lines up with the inner edge of its own 1 px rectangular panel border.
+     * ModernUI instead centres an {@code sBorderWidth}-thick stroke on the panel
+     * outline, so its inner edge sits at {@code PANEL_INSET - sBorderWidth / 2} —
+     * using 3 px there would leave a strip of dark panel fill between the border
+     * and the glow. The glow is therefore aligned to that inner edge, exactly like
+     * obscure-tooltips' own geometry does.
      */
-    private static final float EFFECT_OUTSET = 3.0F;
+    private static final float EFFECT_OUTSET_FALLBACK = 3.0F;
 
     /** {@code ShimmerEffect} lerps toward a control rectangle inset by this much. */
     private static final float SHIMMER_CONTROL_INSET = 12.0F;
@@ -71,18 +76,41 @@ public final class ModernUIRoundedEffects {
     // ---- Cached reflection handles ----
     private static boolean initAttempted;
     private static Field cornerRadiusField;
+    private static Field borderWidthField;
 
     private static boolean init() {
         if (!initAttempted) {
             initAttempted = true;
             try {
-                cornerRadiusField = Class.forName("icyllis.modernui.mc.TooltipRenderer")
-                        .getField("sCornerRadius");
+                Class<?> tooltipRenderer = Class.forName("icyllis.modernui.mc.TooltipRenderer");
+                cornerRadiusField = tooltipRenderer.getField("sCornerRadius");
+                borderWidthField = tooltipRenderer.getField("sBorderWidth");
             } catch (Throwable ignored) {
                 cornerRadiusField = null;
+                borderWidthField = null;
             }
         }
         return cornerRadiusField != null;
+    }
+
+    /**
+     * How far outside the layout box the glow band starts: the inner edge of
+     * ModernUI's border stroke.
+     */
+    private static float effectOutset() {
+        return PANEL_INSET - borderWidth() * 0.5F;
+    }
+
+    /** ModernUI's {@code sBorderWidth}, i.e. the full width of the border stroke. */
+    private static float borderWidth() {
+        try {
+            if (borderWidthField != null) {
+                return Math.max(0.0F, borderWidthField.getFloat(null));
+            }
+        } catch (Throwable ignored) {
+            // fall through
+        }
+        return PANEL_INSET - EFFECT_OUTSET_FALLBACK;
     }
 
     /**
@@ -112,8 +140,7 @@ public final class ModernUIRoundedEffects {
     // ------------------------------------------------------------------
 
     /**
-     * {@code RimLightEffect.renderBack}: a ring whose outer edge is the 3 px outset
-     * rectangle and whose inner edge is that rectangle inset by
+     * {@code RimLightEffect.renderBack}: a ring whose outer edge is the border's inner edge and whose inner edge is that rectangle inset by
      * {@code min(w, h) * 0.25 * (0.8 + 0.4 * cos(t))}, coloured by the outer / inner
      * {@link QuadPalette} pair.
      */
@@ -123,10 +150,11 @@ public final class ModernUIRoundedEffects {
         QuadPalette inner = rim.innerPalette();
         float time = state.timeInSeconds();
 
-        float left = x - EFFECT_OUTSET;
-        float top = y - EFFECT_OUTSET;
-        float fullWidth = width + 2.0F * EFFECT_OUTSET;
-        float fullHeight = height + 2.0F * EFFECT_OUTSET;
+        float outset = effectOutset();
+        float left = x - outset;
+        float top = y - outset;
+        float fullWidth = width + 2.0F * outset;
+        float fullHeight = height + 2.0F * outset;
         float halfWidth = fullWidth * 0.5F;
         float halfHeight = fullHeight * 0.5F;
         float centerX = left + halfWidth;
@@ -185,10 +213,11 @@ public final class ModernUIRoundedEffects {
      */
     private static boolean renderShimmer(ShimmerEffect shimmer, TooltipState state, GuiGraphics graphics,
                                          int x, int y, int width, int height) {
-        float left = x - EFFECT_OUTSET;
-        float top = y - EFFECT_OUTSET;
-        float fullWidth = width + 2.0F * EFFECT_OUTSET;
-        float fullHeight = height + 2.0F * EFFECT_OUTSET;
+        float outset = effectOutset();
+        float left = x - outset;
+        float top = y - outset;
+        float fullWidth = width + 2.0F * outset;
+        float fullHeight = height + 2.0F * outset;
         float controlWidth = fullWidth - 2.0F * SHIMMER_CONTROL_INSET;
         float controlHeight = fullHeight - 2.0F * SHIMMER_CONTROL_INSET;
         if (controlWidth <= 0.0F || controlHeight <= 0.0F) {
@@ -272,9 +301,9 @@ public final class ModernUIRoundedEffects {
     /**
      * Corner radius of obscure's effect rectangles. They are ModernUI's panel
      * rectangle (layout box + {@value #PANEL_INSET} px, radius {@code sCornerRadius})
-     * inset by the difference, so the radius shrinks by the same amount. Returns 0
-     * when the radius cannot be read, which degenerates to the original square
-     * outline.
+     * inset to the border's inner edge, so the radius shrinks by half the border
+     * width. Returns 0 when the radius cannot be read, which degenerates to the
+     * original square outline.
      */
     private static float effectRadius(float halfWidth, float halfHeight) {
         float panelRadius;
@@ -283,7 +312,7 @@ public final class ModernUIRoundedEffects {
         } catch (Throwable ignored) {
             return 0.0F;
         }
-        float radius = panelRadius - (PANEL_INSET - EFFECT_OUTSET);
+        float radius = panelRadius - borderWidth() * 0.5F;
         return Math.max(0.0F, Math.min(radius, Math.min(halfWidth, halfHeight)));
     }
 
