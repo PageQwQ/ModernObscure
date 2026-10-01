@@ -8,6 +8,9 @@ dependencies {
     // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
     modCompileOnly files(rootProject.file("libs/obscure_tooltips-neoforge-${rootProject.obscure_tooltips_version}.jar"))
     modCompileOnly files(rootProject.file("libs/fragmentum-neoforge-${rootProject.fragmentum_version}.jar"))
+
+    // Optional config GUI via NeoForge's IConfigScreenFactory extension point
+    modCompileOnly "me.shedaniel.cloth:cloth-config-neoforge:${rootProject.cloth_config_version}"
 }
 
 // Shared code lives in :common. It is compiled as part of this source set (not

@@ -37,5 +37,12 @@ versionRange = "*"
 ordering = "NONE"
 side = "CLIENT"
 
+[[dependencies.modernobscurecompat]]
+modId = "cloth_config"
+type = "optional"
+versionRange = "*"
+ordering = "NONE"
+side = "CLIENT"
+
 [[mixins]]
 config = "modernobscurecompat.mixins.json"

@@ -1,0 +1,18 @@
+{
+  "modernobscurecompat.config.title": "Modern Obscure Config",
+  "modernobscurecompat.config.category.general": "提示框过渡",
+  "modernobscurecompat.config.enabled": "启用过渡效果",
+  "modernobscurecompat.config.enabled.tooltip": "丝滑提示框过渡的总开关。",
+  "modernobscurecompat.config.smoothMovement": "平滑移动",
+  "modernobscurecompat.config.smoothMovement.tooltip": "提示框平滑滑向鼠标，而不是瞬间吸附。",
+  "modernobscurecompat.config.movementSpeed": "移动速度",
+  "modernobscurecompat.config.movementSpeed.tooltip": "提示框追上鼠标的快慢。越大越跟手，越小越飘。",
+  "modernobscurecompat.config.snapDistance": "吸附距离",
+  "modernobscurecompat.config.snapDistance.tooltip": "跳变超过该像素距离时立即吸附（避免侧翻时滑过鼠标）。",
+  "modernobscurecompat.config.smoothSize": "平滑尺寸",
+  "modernobscurecompat.config.smoothSize.tooltip": "提示框出现或内容变化时平滑改变尺寸。",
+  "modernobscurecompat.config.sizeSpeed": "尺寸速度",
+  "modernobscurecompat.config.sizeSpeed.tooltip": "提示框达到目标尺寸的快慢。",
+  "modernobscurecompat.config.startScale": "起始缩放",
+  "modernobscurecompat.config.startScale.tooltip": "出现时的起始缩放（1.0 = 不弹入）。"
+}
