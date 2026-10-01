@@ -10,7 +10,9 @@
     "MixinGuiGraphics",
     "MixinGuiGraphicsNeoForge",
     "MixinObscureTooltipRenderer",
-    "MixinTooltipRenderer"
+    "MixinTooltipRenderer",
+    "MixinTooltipState",
+    "MixinTempMinecraft"
   ],
   "injectors": {
     "defaultRequire": 1

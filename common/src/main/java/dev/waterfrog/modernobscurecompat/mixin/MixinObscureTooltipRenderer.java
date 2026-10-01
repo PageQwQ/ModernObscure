@@ -3,6 +3,7 @@ package dev.waterfrog.modernobscurecompat.mixin;
 import dev.obscuria.tooltips.client.TooltipRenderer;
 import dev.obscuria.tooltips.client.TooltipState;
 import dev.waterfrog.modernobscurecompat.compat.ModernUIBackgroundRenderer;
+import dev.waterfrog.modernobscurecompat.compat.ModernUIRoundedEffects;
 import dev.waterfrog.modernobscurecompat.compat.ModernUITooltipGuard;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -60,6 +61,8 @@ public abstract class MixinObscureTooltipRenderer {
         }
         boolean rendered = ModernUIBackgroundRenderer.drawRoundedBackground(
                 graphics, (float) pos.x(), (float) pos.y(), width, height, state);
+        // Only round the panel glow when the rounded panel really is on screen.
+        ModernUIRoundedEffects.setRoundedPanelActive(rendered);
         if (!rendered) {
             state.renderPanel(graphics, pos, width, height);
         }
@@ -80,6 +83,7 @@ public abstract class MixinObscureTooltipRenderer {
                                     List<ClientTooltipComponent> components,
                                     int mouseX, int mouseY, ClientTooltipPositioner positioner,
                                     CallbackInfoReturnable<Boolean> cir) {
+        ModernUIRoundedEffects.setRoundedPanelActive(false);
         // Let ModernUI bind its tooltip uniforms for this frame again.
         ModernUITooltipGuard.restore();
     }

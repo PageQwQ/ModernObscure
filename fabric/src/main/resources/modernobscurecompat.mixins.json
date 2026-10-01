@@ -9,7 +9,8 @@
     "MixinGameRenderer",
     "MixinGuiGraphics",
     "MixinObscureTooltipRenderer",
-    "MixinTooltipRenderer"
+    "MixinTooltipRenderer",
+    "MixinTooltipState"
   ],
   "injectors": {
     "defaultRequire": 1
