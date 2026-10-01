@@ -8,6 +8,8 @@ subprojects {
     repositories {
         maven { url = 'https://maven.fabricmc.net/' }
         maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://maven.shedaniel.me/' }
+        maven { url = 'https://maven.terraformersmc.com/releases/' }
         mavenCentral()
     }
 

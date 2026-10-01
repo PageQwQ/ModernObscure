@@ -10,6 +10,10 @@ dependencies {
     // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
     modCompileOnly files(rootProject.file("libs/obscure_tooltips-fabric-${rootProject.obscure_tooltips_version}.jar"))
     modCompileOnly files(rootProject.file("libs/fragmentum-fabric-${rootProject.fragmentum_version}.jar"))
+
+    // Optional config GUI: Cloth Config screen + Mod Menu entrypoint
+    modCompileOnly "me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}"
+    modCompileOnly "com.terraformersmc:modmenu:${rootProject.modmenu_version}"
 }
 
 jar {

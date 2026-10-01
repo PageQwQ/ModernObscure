@@ -16,6 +16,8 @@ The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) a
 
 ## Features
 
+- **Smooth Tooltip Transitions** — The tooltip glides toward the cursor instead of snapping to it and animates its size on appearance or content changes. Speed, snap distance and start scale are configurable from the mod config screen.
+- **Rounded Rarity Glow** — obscure-tooltips' `rim_light` and `shimmer` back effects are hardcoded rectangles, so their glow keeps square corners and pokes past ModernUI's rounded border. Both are redrawn along a rounded outline whose radius is read from ModernUI's own `sCornerRadius`, so the rarity glow hugs the rounded panel at any radius setting.
 - **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support.
 - **obscure-tooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips.
 - **Slot Texture** — Draws a subtle item-slot background behind the item icon in tooltip headers.

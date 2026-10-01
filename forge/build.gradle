@@ -10,6 +10,9 @@ dependencies {
     // obscure-tooltips -- compile-time only, provided at runtime (not bundled)
     modCompileOnly files(rootProject.file("libs/obscure_tooltips-forge-${rootProject.obscure_tooltips_version}.jar"))
     modCompileOnly files(rootProject.file("libs/fragmentum-forge-${rootProject.fragmentum_version}.jar"))
+
+    // Optional config GUI via Forge's ConfigScreenHandler extension point
+    modCompileOnly "me.shedaniel.cloth:cloth-config-forge:${rootProject.cloth_config_version}"
 }
 
 // Architectury Loom 1.17 puts the FML `fmlloader` jar on both the JVM classpath
