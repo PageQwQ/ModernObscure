@@ -9,20 +9,11 @@
 
 A multi-loader (Fabric & NeoForge) mod hat bridges ModernUI's rounded SDF tooltip backgrounds with obscure-tooltips' feature-rich tooltip system.
 
-The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips) and [Fragmentum](https://modrinth.com/mod/fragmentum), and recommends [ModernUI](https://modrinth.com/mod/modern-ui).
+The mod requires [Obscure Tooltips](https://modrinth.com/mod/obscure-tooltips), [Fragmentum](https://modrinth.com/mod/fragmentum) and recommends [ModernUI](https://modrinth.com/mod/modern-ui), [Cloth Config](https://modrinth.com/mod/cloth-config).
 
-![preview](images/preview.png)
+<img alt="Effect with this mod" height=256 src="images/preview.png">
 
 </center></div>
-
-## Features
-
-- **Smooth Tooltip Transitions** — The tooltip glides toward the cursor instead of snapping to it and animates its size on appearance or content changes. Speed, snap distance and start scale are configurable from the mod config screen (Cloth Config / Mod Menu on Fabric, the built-in config screen on NeoForge).
-- **ModernUI Rounded Backgrounds** — Replaces obscure-tooltips' default panel/frame rendering with ModernUI's SDF (Signed Distance Field) rounded background, including shadow, border, and rainbow color cycling support.
-- **Rounded Rarity Glow** — obscure-tooltips' `rim_light` and `shimmer` back effects are hardcoded rectangles, so their glow keeps square corners and pokes past ModernUI's rounded border. Both are redrawn along a rounded outline whose radius is read from ModernUI's own `sCornerRadius`, so the rarity glow hugs the rounded panel at any radius setting.
-- **Obscure-tooltips Compatibility** — Retains all obscure-tooltips features: armor preview, tool preview, particles, effects (rim light, glow, shimmer), and scrollable tooltips.
-- **AppleSkin Compatible** — Hunger/saturation bars keep rendering correctly on top of the rounded background.
-- **Graceful Fallback** — When ModernUI is not installed, tooltips fall back to obscure-tooltips' default rendering.
 
 ## Building from Source
 
