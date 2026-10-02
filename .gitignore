@@ -35,3 +35,18 @@ run/
 autotest-runtime-deps.txt
 # Eclipse output
 bin/
+
+# Local release staging: built jars, release notes and upload manifests
+release-jars/
+
+# Scratch patches used to port changes between version branches
+patches/
+
+# Reverse-engineering / research notes
+reports/
+
+# Mod jars dropped into libs/ for manual testing. Only the build
+# dependencies (obscure-tooltips, fragmentum) belong in the repository.
+libs/*.jar
+!libs/obscure_tooltips-*.jar
+!libs/fragmentum-*.jar
